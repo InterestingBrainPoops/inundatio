@@ -1,40 +1,49 @@
+use std::ops;
+
 use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct Move {
-    game: SentGame,
-    turn: u32,
-    board: Board,
-    you: Battlesnake,
+    pub game: SentGame,
+    pub turn: u32,
+    pub board: Board,
+    pub you: Battlesnake,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SentGame {
-    id: String,
-    timeout: u128,
+    pub id: String,
+    pub timeout: u128,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Board {
-    height: u8,
-    width: u8,
-    food: Vec<Coordinate>,
-    hazards: Vec<Coordinate>,
-    snakes: Vec<Battlesnake>,
+    pub height: u8,
+    pub width: u8,
+    pub food: Vec<Coordinate>,
+    pub hazards: Vec<Coordinate>,
+    pub snakes: Vec<Battlesnake>,
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct Battlesnake {
-    id: String,
-    name: String,
-    health: u8,
-    body: Vec<Coordinate>,
-    latency: String,
-    head: Coordinate,
-    length: u16,
-    shout: String,
+    pub id: String,
+    pub name: String,
+    pub health: u8,
+    pub body: Vec<Coordinate>,
+    pub latency: String,
+    pub head: Coordinate,
+    pub length: u16,
+    pub shout: String,
 }
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct Coordinate {
-    x: u8,
-    y: u8,
+    pub x: i8,
+    pub y: i8,
+}
+impl ops::AddAssign<Coordinate> for Coordinate {
+
+    fn add_assign(&mut self, rhs: Coordinate) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
 }

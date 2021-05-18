@@ -19,10 +19,10 @@ async fn main() {
     });
     let start = warp::path("start")
         .and(warp::post())
-        .map(|| warp::reply::with_status("", StatusCode::OK));
+        .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
     let end = warp::path("end")
         .and(warp::post())
-        .map(|| warp::reply::with_status("", StatusCode::OK));
+        .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
     let get_move = warp::path("move")
         .and(warp::post())
         .and(warp::body::json())
