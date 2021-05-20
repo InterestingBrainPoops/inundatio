@@ -3,7 +3,6 @@ use std::{i32::MIN, str::FromStr};
 use crate::types::*;
 // gets the best move given a board state.
 pub fn get_move( sent_move: &Move) -> (&str, Coordinate, i32) {
-	let out = "up"; // default move, useless with the design im using.
 	let mut possible_moves = vec![("up", Coordinate::new(0, 1), 0 as i32), ("down", Coordinate::new(0, -1), 0 as i32), ("left", Coordinate::new(-1, 0), 0 as i32), ("right", Coordinate::new(1, 0), 0 as i32)];
 	// ^ all the possible moves ( 4 of them), their scores, and what they do.
 	for x in &mut possible_moves { // iterate through all possible moves
@@ -83,6 +82,7 @@ fn lost(board: &Move) -> bool {
 	for x in &board.board.snakes {
 		for pos in &x.body {
 			if board.you.head == *pos {
+				println!("pos: {:?}", board.you.head);
 				return true;
 			}
 		}
