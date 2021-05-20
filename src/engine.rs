@@ -58,21 +58,12 @@ fn eval( board : &Move) -> i32 {
 // Only applies the move to YOU.
 // Doesn't clone the board state.
 fn make_move(board : &mut Move, move_to_make : &Coordinate){
-	match (board.you.body).get(0) {
-		Some(coord)=> {board.you.body.insert(0, *coord);},
-		None => {panic!("something whent wrong");}
-	}
-	
-	board.you.head = *move_to_make;
-	board.you.body.insert(0, board.you.head);
-	board.you.body.pop();
+	board.you.head = *move_to_make; // sets the head of the snake
+	board.you.body.insert(0, board.you.head); // adds the head to the beginning of the snake
+	board.you.body.pop(); // removes the tail
 	// find the right snake
 	for x in &mut board.board.snakes {
 		if x.id.eq(&board.you.id) {
-			match x.body.get(0) {// insert the correct head position
-				Some(coord)=> {x.body.insert(0, *coord);},
-				None => {panic!("something went wrong");}
-			}
 			x.head = *move_to_make;
 			x.body.insert(0, x.head);
 			x.body.pop();
@@ -90,7 +81,7 @@ fn lost(board: &Move) -> bool {
 		return true;
 	}
 	for x in &board.board.snakes {
-		for pos in &x.body[0..(x.body.len()-1)] {
+		for pos in &x.body {
 			if board.you.head == *pos {
 				return true;
 			}
