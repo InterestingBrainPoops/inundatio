@@ -14,6 +14,7 @@ pub fn get_move( sent_move: &Move) -> (&str, Coordinate, i32) {
 	// get the highest score, return the tuple.
 	let mut biggest = possible_moves[0];
 	for x in possible_moves {
+		println!("Move: {}, Score: {}", x.0, x.2);
 		if x.2 > biggest.2 {
 			biggest = x;
 		}
