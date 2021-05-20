@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{i32::MIN, str::FromStr};
 
 use crate::types::*;
 // gets the best move given a board state.
@@ -10,7 +10,6 @@ pub fn getMove( sent_move: &Move) -> String {
 // higher is better
 // Static eval of the board state.
 fn eval( board : &Move) -> i32 {
-	let score = 0;
 	// check if dead
 	 // if dead, then return i32 min
 	// then look at the smallest path to the closest food, if there is no path to any food, then return max negative
@@ -28,14 +27,21 @@ fn eval( board : &Move) -> i32 {
 		// iterate through each empty square
 			// see if I am closest to that square
 		// add the number of squares i am closest to * 1 to score.
+	if self::lost(board) {return MIN;} // if i lost, then return the minimum 
+	let mut foodscores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
 
-	score
+	for (index, foodpos) in board.board.food.iter().enumerate(){
+		foodscores[index] = (index, manhattan(&board.you.head, foodpos)); // populate the foodscores array
+	}
+	foodscores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
+	
+	foodscores[0].1 // return the distance to the closest food.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
 // Doesn't clone the board state.
 fn make_move(board : &mut Move, move_to_make : &Coordinate){
-	match board.you.body.get(0) {
+	match (board.you.body).get(0) {
 		Some(coord)=> {board.you.body.insert(0, *coord);},
 		None => {panic!("something whent wrong");}
 	}
@@ -48,11 +54,30 @@ fn make_move(board : &mut Move, move_to_make : &Coordinate){
 		if x.id.eq(&board.you.id) {
 			match x.body.get(0) {
 				Some(coord)=> {x.body.insert(0, *coord);},
-				None => {panic!("something whent wrong");}
+				None => {panic!("something went wrong");}
 			}
 			x.head += *move_to_make;
 			x.body.pop();
 			break;
 		}
 	}
+}
+/// returns the manhattan distance between the 2 points.
+fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
+    ((pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs()) as i32
+}
+/// returns whether or not you are dead.
+fn lost(board: &Move) -> bool {
+	if(board.you.head.x < 0 || board.you.head.x >= board.board.width || board.you.head.y < 0 || board.you.head.y >= board.board.height ){
+		return true;
+	}
+	for x in &board.board.snakes {
+		for pos in &x.body[0..(x.body.len()-1)] {
+			if(board.you.head == *pos){
+				return false;
+			}
+		}
+	}
+
+	false
 }
