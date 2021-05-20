@@ -13,7 +13,7 @@ async fn main() {
 	let index = warp::path::end().map(|| {
 		warp::reply::json(&json!({
 			"apiversion": "1",
-			"color": "65bbc7",
+			"color": "#65bbc7",
 			"head": "sand-worm",
 			"tail": "rbc-necktie",
 		}))
