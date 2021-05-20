@@ -27,10 +27,12 @@ async fn main() {
 		.and(warp::post())
 		.and(warp::body::json())
 		.and_then(|sent_move: Move| async move {
-			let out_move;
-			out_move = engine::getMove(&sent_move);
+            println!("GOT MOVE");
+			// let out_move;
+			// out_move = engine::get_move(&sent_move);
+            // println!("Move: {}, Score: {}", out_move.0, out_move.2);
 			Ok(warp::reply::json(&json!({
-				"move": out_move,
+				"move": "right",
 				"shout": "We've been trying to reach you concerning your vehicle's extended warranty."
 			}))) as Result<_, Rejection>
 		});

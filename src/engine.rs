@@ -2,14 +2,29 @@ use std::{i32::MIN, str::FromStr};
 
 use crate::types::*;
 // gets the best move given a board state.
-pub fn getMove( sent_move: &Move) -> String {
-	let out = "up";
-	return String::from_str(out).expect("something went horribly wrong.");
+pub fn get_move( sent_move: &Move) -> (&str, Coordinate, i32) {
+	let out = "up"; // default move, useless with the design im using.
+	let mut possible_moves = vec![("up", Coordinate::new(0, 1), 0 as i32), ("down", Coordinate::new(0, -1), 0 as i32), ("left", Coordinate::new(-1, 0), 0 as i32), ("right", Coordinate::new(1, 0), 0 as i32)];
+	// ^ all the possible moves ( 4 of them), their scores, and what they do.
+	for x in &mut possible_moves { // iterate through all possible moves
+		let mut board_new = sent_move.clone(); // clone the board.
+		make_move(&mut board_new, &(sent_move.you.head + x.1)); // make the move on the board
+		x.2 = eval(&board_new); // evaluate the board
+	}
+	// get the highest score, return the tuple.
+	let mut biggest = possible_moves[0];
+	for x in possible_moves {
+		if x.2 > biggest.2 {
+			biggest = x;
+		}
+	}
+	biggest
 }
 
 // higher is better
 // Static eval of the board state.
 fn eval( board : &Move) -> i32 {
+	{
 	// check if dead
 	 // if dead, then return i32 min
 	// then look at the smallest path to the closest food, if there is no path to any food, then return max negative
@@ -27,15 +42,16 @@ fn eval( board : &Move) -> i32 {
 		// iterate through each empty square
 			// see if I am closest to that square
 		// add the number of squares i am closest to * 1 to score.
+	}
 	if self::lost(board) {return MIN;} // if i lost, then return the minimum 
-	let mut foodscores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
+	let mut food_scores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
 
 	for (index, foodpos) in board.board.food.iter().enumerate(){
-		foodscores[index] = (index, manhattan(&board.you.head, foodpos)); // populate the foodscores array
+		food_scores[index] = (index, 0 - manhattan(&board.you.head, foodpos)); // populate the foodscores array
 	}
-	foodscores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
+	food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
 	
-	foodscores[0].1 // return the distance to the closest food.
+	food_scores[0].1 // return the distance to the closest food.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
@@ -49,7 +65,6 @@ fn make_move(board : &mut Move, move_to_make : &Coordinate){
 	board.you.head += *move_to_make;
 	board.you.body.pop();
 	// find the right snake
-	
 	for x in &mut board.board.snakes {
 		if x.id.eq(&board.you.id) {
 			match x.body.get(0) {
@@ -68,12 +83,12 @@ fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
 }
 /// returns whether or not you are dead.
 fn lost(board: &Move) -> bool {
-	if(board.you.head.x < 0 || board.you.head.x >= board.board.width || board.you.head.y < 0 || board.you.head.y >= board.board.height ){
+	if board.you.head.x < 0 || board.you.head.x >= board.board.width || board.you.head.y < 0 || board.you.head.y >= board.board.height {
 		return true;
 	}
 	for x in &board.board.snakes {
 		for pos in &x.body[0..(x.body.len()-1)] {
-			if(board.you.head == *pos){
+			if board.you.head == *pos {
 				return false;
 			}
 		}
