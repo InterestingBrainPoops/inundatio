@@ -50,7 +50,7 @@ fn eval( board : &Move) -> i32 {
 		food_scores[index] = (index, 0 - manhattan(&board.you.head, foodpos)); // populate the foodscores array
 	}
 	food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
-	
+	println!("{:#?}", food_scores[0]);
 	food_scores[0].1 // return the distance to the closest food.
 }
 // makes the following move on the board given.
