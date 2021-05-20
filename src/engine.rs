@@ -79,7 +79,7 @@ fn make_move(board : &mut Move, move_to_make : &Coordinate){
 }
 /// returns the manhattan distance between the 2 points.
 fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
-    ((pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs()) as i32
+	((pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs()) as i32
 }
 /// returns whether or not you are dead.
 fn lost(board: &Move) -> bool {
