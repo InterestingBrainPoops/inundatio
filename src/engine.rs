@@ -81,7 +81,7 @@ fn lost(board: &Move) -> bool {
 		return true;
 	}
 	for x in &board.board.snakes {
-		for pos in &x.body {
+		for pos in &x.body[1..] {
 			if board.you.head == *pos {
 				println!("pos: {:?}", board.you.head);
 				return true;
