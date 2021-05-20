@@ -31,7 +31,7 @@ async fn main() {
 			println!("GOT MOVE");
 			let out_move;
 			out_move = engine::get_move(&sent_move);
-			println!("Move: {}, Score: {}", out_move.0, out_move.2);
+			println!("Turn: {}, ToMove: {}, Score: {}",sent_move.turn , out_move.0, out_move.2);
 			Ok(warp::reply::json(&json!({
 				"move": out_move.0,
 				"shout": "We've been trying to reach you concerning your vehicle's extended warranty."
