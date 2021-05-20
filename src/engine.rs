@@ -66,9 +66,10 @@ fn make_move(board : &mut Move, move_to_make : &Coordinate){
 			x.head = *move_to_make;
 			x.body.insert(0, x.head);
 			x.body.pop();
-			break;
+			return;
 		}
 	}
+	panic!("Should never be reached (function call to make_move terminated without reaching the break statement)");
 }
 /// returns the manhattan distance between the 2 points.
 fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
