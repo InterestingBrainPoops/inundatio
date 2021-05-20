@@ -63,16 +63,18 @@ fn make_move(board : &mut Move, move_to_make : &Coordinate){
 		None => {panic!("something whent wrong");}
 	}
 	
-	board.you.head += *move_to_make;
+	board.you.head = *move_to_make;
+	board.you.body.insert(0, board.you.head);
 	board.you.body.pop();
 	// find the right snake
 	for x in &mut board.board.snakes {
 		if x.id.eq(&board.you.id) {
-			match x.body.get(0) {
+			match x.body.get(0) {// insert the correct head position
 				Some(coord)=> {x.body.insert(0, *coord);},
 				None => {panic!("something went wrong");}
 			}
-			x.head += *move_to_make;
+			x.head = *move_to_make;
+			x.body.insert(0, x.head);
 			x.body.pop();
 			break;
 		}
