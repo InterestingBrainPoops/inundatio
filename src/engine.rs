@@ -47,11 +47,11 @@ fn eval( board : &Move) -> i32 {
 	let mut food_scores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
 
 	for (index, foodpos) in board.board.food.iter().enumerate(){
-		food_scores[index] = (index, 0 - manhattan(&board.you.head, foodpos)); // populate the foodscores array
+		food_scores[index] = (index, manhattan(&board.you.head, foodpos)); // populate the foodscores array
 	}
 	food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
 	println!("{:?}", food_scores[0]);
-	food_scores[0].1 // return the distance to the closest food.
+	0 - food_scores[0].1 // return the distance to the closest food.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
