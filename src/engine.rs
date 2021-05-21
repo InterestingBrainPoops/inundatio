@@ -99,7 +99,7 @@ fn lost(board: &Move) -> bool {
 			return true;
 		}
 		for pos in &x.body[1..] {
-			if board.you.head == *pos && board.you.id != x.id {
+			if board.you.head == *pos{
 				// collision with a snakes body part
 				return true;
 			}
