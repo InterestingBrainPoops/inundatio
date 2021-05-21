@@ -95,14 +95,15 @@ fn lost(board: &Move) -> bool {
 		return true; // out of bounds
 	}
 	for x in &board.board.snakes {
-		for pos in &x.body[..] {
-			if board.you.head == *pos && board.you.id != x.id && board.you.head != x.head {
+		if manhattan(&board.you.head, &x.head) == 1 && x.length >= board.you.length && board.you.id != x.id {
+			return true;
+		}
+		for pos in &x.body[1..] {
+			if board.you.head == *pos && board.you.id != x.id {
 				// collision with a snakes body part
 				return true;
 			}
-			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length && board.you.id != x.id {
-				return true;
-			}
+			
 		}
 	}
 
