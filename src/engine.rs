@@ -100,7 +100,7 @@ fn lost(board: &Move) -> bool {
 				// collision with a snakes body part
 				return true;
 			}
-			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length {
+			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length && board.you.id != x.id {
 				return true;
 			}
 		}
