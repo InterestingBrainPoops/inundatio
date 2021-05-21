@@ -92,12 +92,15 @@ fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
 /// returns whether or not you are dead.
 fn lost(board: &Move) -> bool {
 	if board.you.head.x < 0 || board.you.head.x >= board.board.width || board.you.head.y < 0 || board.you.head.y >= board.board.height {
-		return true;
+		return true; // out of bounds
 	}
 	for x in &board.board.snakes {
 		for pos in &x.body[1..] {
 			if board.you.head == *pos {
-				println!("pos: {:?}", board.you.head);
+				// collision with a snakes body part
+				return true;
+			}
+			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length {
 				return true;
 			}
 		}
