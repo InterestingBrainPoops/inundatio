@@ -108,3 +108,24 @@ fn lost(board: &Move) -> bool {
 
 	false
 }
+// the output of this will NEVER be negative. 
+/// 4 side recursive flood fill implementation
+fn flood_fill (board : &Move , seed: &Coordinate, count : &mut i32) {
+	if seed.x < 0 || seed.x >= board.board.width || seed.y < 0 || seed.y >= board.board.height {
+		return ; // out of bounds
+	}
+	for x in &board.board.snakes {
+		for pos in &x.body[1..] {
+			if *seed == *pos {
+				// not in bounds
+				return;
+			}
+		}
+	}
+
+	*count += 1;
+	flood_fill(board, &(*seed + Coordinate::new(0,1)), count);
+	flood_fill(board, &(*seed + Coordinate::new(0,-1)), count);
+	flood_fill(board, &(*seed + Coordinate::new(-1,0)), count);
+	flood_fill(board, &(*seed + Coordinate::new(1,0)), count);
+}
