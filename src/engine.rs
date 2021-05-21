@@ -22,7 +22,8 @@ pub fn get_move( sent_move: &Move) -> (&str, Coordinate, i32) {
 }
 
 // higher is better
-// Static eval of the board state.
+/// Static eval of the board state.
+/// returns (reachable food) + (reachable squares) - (distance to target)
 fn eval( board : &Move) -> i32 {
 	{
 	// check if dead
@@ -43,11 +44,18 @@ fn eval( board : &Move) -> i32 {
 			// see if I am closest to that square
 		// add the number of squares i am closest to * 1 to score.
 	}
+	let mut reachable_squares = vec![];
+	flood_fill(board, &board.you.head, &mut reachable_squares);
+
 	if self::lost(board) {return MIN;} // if i lost, then return the minimum 
-	let mut food_scores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
+	let mut food_scores: Vec<(usize, i32)> = vec![];// create the food scores array.
 	let target;
 	for (index, foodpos) in board.board.food.iter().enumerate(){
-		food_scores[index] = (index, manhattan(&board.you.head, foodpos)); // populate the foodscores array
+		if reachable_squares.iter().any(|&i| i== *foodpos) { // checks if the food is reachable.
+			food_scores.push((index, manhattan(&board.you.head, foodpos))); // populate the foodscores array
+		}else {
+			food_scores.push((index, 10000)); // basically if the food isnt reachable, then make it so.
+		}
 	}
 	food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
 	
@@ -65,10 +73,10 @@ fn eval( board : &Move) -> i32 {
 		target = board.board.food[food_scores[0].0];
 		println!("Choosing Food at distance {}", food_scores[0].1);
 	}
-	let mut counted = vec![];
-	flood_fill(board, &board.you.head, &mut counted);
-	println!("FF SCORE : {}", counted.len());
-	counted.len() as i32 - manhattan(&board.you.head, &target)*4// return the target value, but negative. thus lower equals higher.
+	
+	println!("FF SCORE : {}", reachable_squares.len());
+	
+	food_scores.len() as i32 + reachable_squares.len() as i32 - manhattan(&board.you.head, &target)*4
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.

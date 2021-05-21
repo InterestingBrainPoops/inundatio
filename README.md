@@ -11,3 +11,8 @@ Then it looks for the following:
 2. Smallest path to the closest snake shorter than it
 3. Food ownership (Vornoi w/ A*)
 4. Area ownership (Vornoi w/ A*)
+
+
+# Current bugs
+Dies from low health
+Goes for obviously unreachable food
