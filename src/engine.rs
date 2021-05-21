@@ -99,14 +99,15 @@ fn lost(board: &Move) -> bool {
 		return true; // out of bounds
 	}
 	for x in &board.board.snakes {
-		for pos in &x.body[1..] {
+		if manhattan(&board.you.head, &x.head) == 1 && x.length >= board.you.length && board.you.id != x.id {
+			return true;
+		}
+		for pos in &x.body[..] {
 			if board.you.head == *pos {
 				// collision with a snakes body part
 				return true;
 			}
-			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length && board.you.id != x.id {
-				return true;
-			}
+			
 		}
 	}
 
@@ -119,9 +120,10 @@ fn flood_fill (board : &Move , seed: &Coordinate, count : &mut i32) {
 		return ; // out of bounds
 	}
 	for x in &board.board.snakes {
-		for pos in &x.body[1..] {
+		for pos in &x.body[..] {
 			if *seed == *pos && *seed != board.you.head{
 				// not in bounds
+				println!("Stop, get some help");
 				return;
 			}
 		}
