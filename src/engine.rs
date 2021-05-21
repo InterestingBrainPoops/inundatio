@@ -65,7 +65,11 @@ fn eval( board : &Move) -> i32 {
 		target = board.board.food[food_scores[0].0];
 		println!("Choosing Food at distance {}", food_scores[0].1);
 	}
-	0 - manhattan(&board.you.head, &target) // return the target value, but negative. thus lower equals higher.
+	let count = 0;
+	let depth = 5;
+	flood_fill(board, &board.you.head, &mut count, &mut depth);
+	println!("FF SCORE : {}", count);
+	0 - manhattan(&board.you.head, &target) + count// return the target value, but negative. thus lower equals higher.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
@@ -108,4 +112,30 @@ fn lost(board: &Move) -> bool {
 	}
 
 	false
+}
+
+// the output of this will NEVER be negative. 
+/// 4 side recursive flood fill implementation 
+/// depth limited to prevent stack overflows
+fn flood_fill (board : &Move , seed: &Coordinate, count : &mut i32, depth : &mut i32) {
+	if(depth == 0) {
+		return;
+	}
+	if seed.x < 0 || seed.x >= board.board.width || seed.y < 0 || seed.y >= board.board.height {
+		return ; // out of bounds
+	}
+	for x in &board.board.snakes {
+		for pos in &x.body[1..] {
+			if *seed == *pos {
+				// not in bounds
+				return;
+			}
+		}
+	}
+	*depth -= 1;
+	*count += 1;
+	flood_fill(board, &(*seed + Coordinate::new(0,1)), count, depth);
+	flood_fill(board, &(*seed + Coordinate::new(0,-1)), count, depth);
+	flood_fill(board, &(*seed + Coordinate::new(-1,0)), count, depth);
+	flood_fill(board, &(*seed + Coordinate::new(1,0)), count, depth);
 }
