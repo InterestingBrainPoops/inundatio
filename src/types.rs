@@ -8,13 +8,18 @@ pub struct Move {
     pub board: Board,
     pub you: Battlesnake,
 }
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct SentGame {
     pub id: String,
     pub timeout: u128,
 }
 
+
+#[derive(Debug,Deserialize, Clone)]
+pub struct Ruleset {
+    pub name : String,
+    pub version: String,
+}
 #[derive(Debug, Deserialize, Clone)]
 pub struct Board {
     pub height: i8,
