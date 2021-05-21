@@ -65,7 +65,11 @@ fn eval( board : &Move) -> i32 {
 		target = board.board.food[food_scores[0].0];
 		println!("Choosing Food at distance {}", food_scores[0].1);
 	}
-	0 - manhattan(&board.you.head, &target) // return the target value, but negative. thus lower equals higher.
+
+	let mut count = 0;
+	flood_fill(board, &board.you.head , &mut count);
+
+	0 - manhattan(&board.you.head, &target) + count // return the target value, but negative. thus lower equals higher.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
@@ -116,7 +120,7 @@ fn flood_fill (board : &Move , seed: &Coordinate, count : &mut i32) {
 	}
 	for x in &board.board.snakes {
 		for pos in &x.body[1..] {
-			if *seed == *pos {
+			if *seed == *pos && *seed != board.you.head{
 				// not in bounds
 				return;
 			}
