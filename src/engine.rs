@@ -121,7 +121,7 @@ fn flood_fill (board : &Move , seed: &Coordinate, counted : &mut Vec<Coordinate>
 		return;
 	}
 	if seed.x < 0 || seed.x >= board.board.width || seed.y < 0 || seed.y >= board.board.height {
-		println!("happened, out of bounds");
+		// println!("happened, out of bounds");
 		return ; // out of bounds
 	}
 	for x in &board.board.snakes {
