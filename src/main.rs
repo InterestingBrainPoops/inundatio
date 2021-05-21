@@ -1,4 +1,6 @@
 mod types;
+use std::time::Instant;
+
 //test
 use dotenv::dotenv;
 use serde_json::json;
@@ -28,10 +30,12 @@ async fn main() {
 		.and(warp::post())
 		.and(warp::body::json())
 		.and_then(|sent_move: Move| async move {
+			let start = Instant::now();
 			println!("GOT MOVE");
 			let out_move;
 			out_move = engine::get_move(&sent_move);
 			println!("Turn: {}, ToMove: {}, Score: {}",sent_move.turn , out_move.0, out_move.2);
+			println!("took me {:?}" start.elapsed());
 			Ok(warp::reply::json(&json!({
 				"move": out_move.0,
 				"shout": "We've been trying to reach you concerning your vehicle's extended warranty."
