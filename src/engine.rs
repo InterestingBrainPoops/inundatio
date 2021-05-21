@@ -65,11 +65,7 @@ fn eval( board : &Move) -> i32 {
 		target = board.board.food[food_scores[0].0];
 		println!("Choosing Food at distance {}", food_scores[0].1);
 	}
-
-	let mut count = 0;
-	flood_fill(board, &board.you.head , &mut count);
-
-	0 - manhattan(&board.you.head, &target) + count // return the target value, but negative. thus lower equals higher.
+	0 - manhattan(&board.you.head, &target) // return the target value, but negative. thus lower equals higher.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
@@ -99,39 +95,16 @@ fn lost(board: &Move) -> bool {
 		return true; // out of bounds
 	}
 	for x in &board.board.snakes {
-		if manhattan(&board.you.head, &x.head) == 1 && x.length >= board.you.length && board.you.id != x.id {
-			return true;
-		}
 		for pos in &x.body[..] {
-			if board.you.head == *pos {
+			if board.you.head == *pos && board.you.id != x.id && board.you.head != x.head {
 				// collision with a snakes body part
 				return true;
 			}
-			
+			if manhattan(&board.you.head, pos) == 1 && x.length >= board.you.length && board.you.id != x.id {
+				return true;
+			}
 		}
 	}
 
 	false
-}
-// the output of this will NEVER be negative. 
-/// 4 side recursive flood fill implementation
-fn flood_fill (board : &Move , seed: &Coordinate, count : &mut i32) {
-	if seed.x < 0 || seed.x >= board.board.width || seed.y < 0 || seed.y >= board.board.height {
-		return ; // out of bounds
-	}
-	for x in &board.board.snakes {
-		for pos in &x.body[..] {
-			if *seed == *pos && *seed != board.you.head{
-				// not in bounds
-				println!("Stop, get some help");
-				return;
-			}
-		}
-	}
-
-	*count += 1;
-	flood_fill(board, &(*seed + Coordinate::new(0,1)), count);
-	flood_fill(board, &(*seed + Coordinate::new(0,-1)), count);
-	flood_fill(board, &(*seed + Coordinate::new(-1,0)), count);
-	flood_fill(board, &(*seed + Coordinate::new(1,0)), count);
 }
