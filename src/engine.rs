@@ -45,13 +45,27 @@ fn eval( board : &Move) -> i32 {
 	}
 	if self::lost(board) {return MIN;} // if i lost, then return the minimum 
 	let mut food_scores: Vec<(usize, i32)> = vec![(0,0); board.board.food.len()]; // create the foodscores array, preallocate memory.
-
+	let target;
 	for (index, foodpos) in board.board.food.iter().enumerate(){
 		food_scores[index] = (index, manhattan(&board.you.head, foodpos)); // populate the foodscores array
 	}
 	food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
-	println!("{:?}", food_scores[0]);
-	0 - food_scores[0].1 // return the distance to the closest food.
+	
+	// get the smallest snake
+	let mut smallest = &board.board.snakes[0];
+	for snake in &board.board.snakes { // loop through all snakes
+		if smallest.length > snake.length && snake.id.ne(&board.you.id) { // if smallest isn't the smallest, make it the smallest
+			smallest = snake;
+		}
+	}
+	if smallest.length < board.you.length && board.board.snakes.len() != 0 {
+		target = smallest.head;
+		println!("Choosing Snake at distance {}", manhattan(&board.you.head, &target))
+	}else{
+		target = board.board.food[food_scores[0].0];
+		println!("Choosing Food at distance {}", food_scores[0].1);
+	}
+	0 - manhattan(&board.you.head, &target) // return the target value, but negative. thus lower equals higher.
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
