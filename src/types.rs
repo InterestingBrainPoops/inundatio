@@ -111,9 +111,11 @@ impl Move {
                     self.board.dead.push(snake.id.clone());
                     out.died.push(snake.id.clone());
                     // out of bounds
-                }else {
+                }else{
                     for opp in &self.board.snakes {
-                        if opp.body.contains(&snake.head)  {
+                        
+                        // the following is to check if my head is within their body.
+                        if !self.board.dead.contains(&opp.id) && opp.body.contains(&snake.head)  {
                             self.board.dead.push(snake.id.clone());
                             out.died.push(snake.id.clone());
                             break;
@@ -126,7 +128,10 @@ impl Move {
         out
     }
     pub fn unmake_move ( &mut self, delta : &Delta) {
-
+        // add tails back to snakes
+        // remove the heads
+        // increase all snake health by 1
+        // revive all killed snakes
     }
 }
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone, Copy)]
