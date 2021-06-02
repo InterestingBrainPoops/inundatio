@@ -21,6 +21,7 @@ pub struct Board {
     pub food: Vec<Coordinate>,
     pub hazards: Vec<Coordinate>,
     pub snakes: Vec<Battlesnake>,
+    pub dead: Vec<String>, // a vector of the dead ids.
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
@@ -36,53 +37,59 @@ pub struct Battlesnake {
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Delta {
-    pub dead: Vec<Battlesnake>, // the snakes that died during this turn
+    pub died: Vec<String>, // the ids of the snakes that died during this turn
     pub tails: Vec<(String, Coordinate)>, // the tails of the snakes that were removed during this turn
     pub eaten_food: Vec<Coordinate>, // the positions of the food that were eaten during this turn ( if any )
 }
 impl Move {
+    // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast. 
+    // at least i think
     pub fn make_move(&mut self, moves: &Vec<SnakeMove>, turn: bool) -> Delta {
         let mut out = Delta {
-            dead: vec![],
+            died: vec![],
             tails: vec![],
             eaten_food: vec![],
         };
-        let mut all_alive: Vec<Battlesnake> = vec![];
         // the following for loop removes all tails, and also moves all snakes within the given moves.
-        for snake in &mut self.board.snakes { 
-            // each snake
-            snake.health -= 1; // decrement the health
-            for snakes_move in moves {
-                // this entire block here just moves the snakes in the direction they chose
-                if snake.id == snakes_move.id {
-                    // basically if it matches the id.
-                    let add = match snakes_move.snake_move.as_str() {
-                        "up" => Coordinate::new(0, 1),
-                        "down" => Coordinate::new(0, -1),
-                        "left" => Coordinate::new(-1, 0),
-                        "right" => Coordinate::new(1, 0),
-                        _ => {
-                            panic!("A move was not UDLR");
+        for snake in &mut self.board.snakes {
+            // checks that the snake is alive.
+            if !self.board.dead.contains(&snake.id) {
+                snake.health -= 1; // decrement the health
+                for snakes_move in moves {
+                    // this entire block here just moves the snakes in the direction they chose
+                    if snake.id == snakes_move.id {
+                        // basically if it matches the id.
+                        let add = match snakes_move.snake_move.as_str() {
+                            "up" => Coordinate::new(0, 1),
+                            "down" => Coordinate::new(0, -1),
+                            "left" => Coordinate::new(-1, 0),
+                            "right" => Coordinate::new(1, 0),
+                            _ => {
+                                panic!("A move was not UDLR");
+                            }
+                        };
+                        snake.head += add;
+                        snake.body.insert(0, snake.head);
+                        match snake.body.pop() {
+                            Some(x) => {
+                                out.tails.push((snake.id.clone(), x));
+                            }
+                            None => panic!("snakes were at length zero. This shouldn't happen."),
                         }
-                    };
-                    snake.head += add;
-                    snake.body.insert(0, snake.head);
-                    match snake.body.pop() {
-                        Some(x) => {
-                            out.tails.push((snake.id.clone(), x));
-                        }
-                        None => panic!("snakes were at length zero. This shouldn't happen."),
                     }
                 }
-            }
-            // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
-            match self.board.food.iter().position(|&r| r == snake.head) {
-                Some(index) => {
-                    out.eaten_food.push(self.board.food.remove(index)); // removes the food at the given index.
-                    snake.health = 100;
-                    snake.body.push(snake.body[snake.body.len() - 1]); // basically dupes the tail.
+                // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
+                match self.board.food.iter().position(|&r| r == snake.head) {
+                    Some(index) => {
+                        out.eaten_food.push(self.board.food.remove(index)); // removes the food at the given index.
+                        snake.health = 100;
+                        snake.body.push(snake.body[snake.body.len() - 1]); // basically dupes the tail.
+                    }
+                    None => {}
                 }
-                None => {}
+                if snake.id.eq(&self.you.id) {
+                    self.you = snake.clone();
+                }
             }
         }
         // following kills snakes if they are:
@@ -90,33 +97,36 @@ impl Move {
         //   out of health (<= 0)
         //   head to body collision
         //   head to head collision
-		for snake in &self.board.snakes {
-			let mut alive = true; // basically whether or not this snake is dead.
-            if snake.health <= 0 {
-                // no health
-                alive = false;
-            } else if snake.head.x < 0
-                || snake.head.y < 0
-                || snake.head.x >= self.board.width
-                || snake.head.y >= self.board.height
-            {
-                // out of bounds
-                alive = false;
-            }
-			if alive { // head to body collision
-				for x in &self.board.snakes {
-                    for y in &x.body[1..] {
-                        if *y == snake.head {
-                            alive = false;
+        for snake in &self.board.snakes {
+            if  !self.board.dead.contains(&snake.id) {
+                if snake.health <= 0 {
+                    self.board.dead.push(snake.id.clone());
+                    out.died.push(snake.id.clone());
+                    // no health
+                } else if snake.head.x < 0
+                    || snake.head.y < 0
+                    || snake.head.x >= self.board.width
+                    || snake.head.y >= self.board.height
+                {
+                    self.board.dead.push(snake.id.clone());
+                    out.died.push(snake.id.clone());
+                    // out of bounds
+                }else {
+                    for opp in &self.board.snakes {
+                        if opp.body.contains(&snake.head)  {
+                            self.board.dead.push(snake.id.clone());
+                            out.died.push(snake.id.clone());
+                            break;
                         }
                     }
                 }
             }
-            if alive {
-                all_alive.push(snake.clone());
-            }
-		}
+            
+        }
         out
+    }
+    pub fn unmake_move ( &mut self, delta : &Delta) {
+
     }
 }
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone, Copy)]
