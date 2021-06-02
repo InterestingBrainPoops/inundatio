@@ -48,7 +48,8 @@ impl Move {
             eaten_food: vec![],
         };
         let mut all_alive: Vec<Battlesnake> = vec![];
-        for snake in &mut self.board.snakes {
+        // the following for loop removes all tails, and also moves all snakes within the given moves.
+        for snake in &mut self.board.snakes { 
             // each snake
             snake.health -= 1; // decrement the health
             for snakes_move in moves {
@@ -74,7 +75,7 @@ impl Move {
                     }
                 }
             }
-            // checks if the head is on any food, and if it is, then it removes it.
+            // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
             match self.board.food.iter().position(|&r| r == snake.head) {
                 Some(index) => {
                     out.eaten_food.push(self.board.food.remove(index)); // removes the food at the given index.
@@ -84,6 +85,11 @@ impl Move {
                 None => {}
             }
         }
+        // following kills snakes if they are:
+        //   out of bounds
+        //   out of health (<= 0)
+        //   head to body collision
+        //   head to head collision
 		for snake in &self.board.snakes {
 			let mut alive = true; // basically whether or not this snake is dead.
             if snake.health <= 0 {
@@ -97,7 +103,7 @@ impl Move {
                 // out of bounds
                 alive = false;
             }
-			if alive {
+			if alive { // head to body collision
 				for x in &self.board.snakes {
                     for y in &x.body[1..] {
                         if *y == snake.head {
@@ -105,7 +111,6 @@ impl Move {
                         }
                     }
                 }
-                alive = true;
             }
             if alive {
                 all_alive.push(snake.clone());
