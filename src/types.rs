@@ -114,7 +114,7 @@ impl State {
         for snake in &self.state.board.snakes {
             if !self.dead.contains(&snake.id) {
                 if snake.health <= 0 { // out of health
-                    self.dead.push(snake.id.clone());
+                    
                     out.died.push(snake.id.clone());
                     // no health
                 } else if snake.head.x < 0
@@ -122,21 +122,26 @@ impl State {
                     || snake.head.x >= self.state.board.width
                     || snake.head.y >= self.state.board.height
                 { // out of bounds
-                    self.dead.push(snake.id.clone());
+                    
                     out.died.push(snake.id.clone());
                     // out of bounds
+                } else if snake.body.contains(&snake.head) {
+                    
+                    out.died.push(snake.id.clone());
                 } else {
                     for opp in &self.state.board.snakes {
-                        // the following is to check if snake  head is within opp's body.
-                        if !self.dead.contains(&opp.id) && opp.body.contains(&snake.head) {
-                            self.dead.push(snake.id.clone());
-                            out.died.push(snake.id.clone());
-                            break;
+                        if !self.dead.contains(&snake.id){// another battlesnake collision
+                            if opp.body[1..].contains(&snake.head) {
+                                out.died.push(snake.id.clone());
+                            } else if opp.head == snake.head && snake.length <= opp.length {// head to head and losing.
+                                out.died.push(snake.id.clone());
+                            }
                         }
                     }
                 }
             }
         }
+        self.dead.append(&mut out.died.clone());
         out
     }
     pub fn unmake_move(&mut self, delta: &Delta) {
