@@ -1,6 +1,8 @@
-use std::ops;
-
 use serde::Deserialize;
+use std::cmp::max;
+use std::num::ParseIntError;
+use std::ops;
+use std::str::FromStr;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Move {
     pub game: SentGame,
@@ -13,7 +15,13 @@ pub struct SentGame {
     pub id: String,
     pub timeout: u128,
 }
-
+#[derive(Debug, Clone, Copy, Deserialize, Eq, PartialEq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
 #[derive(Debug, Deserialize, Clone)]
 pub struct Board {
     pub height: i8,
@@ -21,7 +29,7 @@ pub struct Board {
     pub food: Vec<Coordinate>,
     pub hazards: Vec<Coordinate>,
     pub snakes: Vec<Battlesnake>,
-    pub dead: Vec<String>, // a vector of the dead ids.
+    // pub dead: Vec<String>, // a vector of the dead ids.
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
@@ -41,29 +49,35 @@ pub struct Delta {
     pub tails: Vec<(String, Coordinate)>, // the tails of the snakes that were removed during this turn
     pub eaten_food: Vec<Coordinate>, // the positions of the food that were eaten during this turn ( if any )
 }
-impl Move {
-    // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast. 
+
+pub struct State {
+    pub state: Move,       // current state
+    pub dead: Vec<String>, // ids
+    pub turn: bool
+}
+impl State {
+    // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
     // at least i think
-    pub fn make_move(&mut self, moves: &Vec<SnakeMove>, turn: bool) -> Delta {
+    pub fn make_move(&mut self, moves: &Vec<SnakeMove>) -> Delta {
         let mut out = Delta {
             died: vec![],
             tails: vec![],
             eaten_food: vec![],
         };
         // the following for loop removes all tails, and also moves all snakes within the given moves.
-        for snake in &mut self.board.snakes {
+        for snake in &mut self.state.board.snakes {
             // checks that the snake is alive.
-            if !self.board.dead.contains(&snake.id) {
+            if !self.dead.contains(&snake.id) {
                 snake.health -= 1; // decrement the health
                 for snakes_move in moves {
                     // this entire block here just moves the snakes in the direction they chose
                     if snake.id == snakes_move.id {
                         // basically if it matches the id.
-                        let add = match snakes_move.snake_move.as_str() {
-                            "up" => Coordinate::new(0, 1),
-                            "down" => Coordinate::new(0, -1),
-                            "left" => Coordinate::new(-1, 0),
-                            "right" => Coordinate::new(1, 0),
+                        let add = match snakes_move.snake_move {
+                            Direction::Up => Coordinate::new(0, 1),
+                            Direction::Down => Coordinate::new(0, -1),
+                            Direction::Left => Coordinate::new(-1, 0),
+                            Direction::Right => Coordinate::new(1, 0),
                             _ => {
                                 panic!("A move was not UDLR");
                             }
@@ -79,16 +93,16 @@ impl Move {
                     }
                 }
                 // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
-                match self.board.food.iter().position(|&r| r == snake.head) {
+                match self.state.board.food.iter().position(|&r| r == snake.head) {
                     Some(index) => {
-                        out.eaten_food.push(self.board.food.remove(index)); // removes the food at the given index.
+                        out.eaten_food.push(self.state.board.food.remove(index)); // removes the food at the given index.
                         snake.health = 100;
                         snake.body.push(snake.body[snake.body.len() - 1]); // basically dupes the tail.
                     }
                     None => {}
                 }
-                if snake.id.eq(&self.you.id) {
-                    self.you = snake.clone();
+                if snake.id.eq(&self.state.you.id) {
+                    self.state.you = snake.clone();
                 }
             }
         }
@@ -97,41 +111,96 @@ impl Move {
         //   out of health (<= 0)
         //   head to body collision
         //   head to head collision
-        for snake in &self.board.snakes {
-            if  !self.board.dead.contains(&snake.id) {
+        for snake in &self.state.board.snakes {
+            if !self.dead.contains(&snake.id) {
                 if snake.health <= 0 {
-                    self.board.dead.push(snake.id.clone());
+                    self.dead.push(snake.id.clone());
                     out.died.push(snake.id.clone());
                     // no health
                 } else if snake.head.x < 0
                     || snake.head.y < 0
-                    || snake.head.x >= self.board.width
-                    || snake.head.y >= self.board.height
+                    || snake.head.x >= self.state.board.width
+                    || snake.head.y >= self.state.board.height
                 {
-                    self.board.dead.push(snake.id.clone());
+                    self.dead.push(snake.id.clone());
                     out.died.push(snake.id.clone());
                     // out of bounds
-                }else{
-                    for opp in &self.board.snakes {
-                        
+                } else {
+                    for opp in &self.state.board.snakes {
                         // the following is to check if my head is within their body.
-                        if !self.board.dead.contains(&opp.id) && opp.body.contains(&snake.head)  {
-                            self.board.dead.push(snake.id.clone());
+                        if !self.dead.contains(&opp.id) && opp.body.contains(&snake.head) {
+                            self.dead.push(snake.id.clone());
                             out.died.push(snake.id.clone());
                             break;
                         }
                     }
                 }
             }
-            
         }
         out
     }
-    pub fn unmake_move ( &mut self, delta : &Delta) {
+    pub fn unmake_move(&mut self, delta: &Delta) {
         // add tails back to snakes
         // remove the heads
         // increase all snake health by 1
         // revive all killed snakes
+    }
+    // function minimax(node, depth, maximizingPlayer) is
+    // if depth = 0 or node is a terminal node then
+    //     return the heuristic value of node
+    // if maximizingPlayer then
+    //     value := −∞
+    //     for each child of node do
+    //         value := max(value, minimax(child, depth − 1, FALSE))
+    //     return value
+    // else (* minimizing player *)
+    //     value := +∞
+    //     for each child of node do
+    //         value := min(value, minimax(child, depth − 1, TRUE))
+    //     return value
+
+    /// Depth is how far to search
+    /// maximizing is whether the function is supposed to be maximizing or minimizing.
+    pub fn minimax(&mut self, depth: u8, maximizing: bool, static_eval : &dyn Fn(&Move) -> i32) -> i32 { 
+        if depth == 0 || self.dead.contains(&self.state.you.id) {
+            static_eval(&self.state);
+        }
+        if maximizing {
+            let mut value = i32::MIN;
+            for current_move in &self.get_moves() {
+                let delta = self.make_move(current_move);
+                value = i32::max(value,self.minimax(depth -1, !maximizing, static_eval));
+                self.unmake_move(&delta);
+            }
+            return value;
+        }else {
+            let mut value = i32::MAX;
+            for current_move in &self.get_moves() {
+                let delta = self.make_move(current_move);
+                value = i32::min(value,self.minimax(depth -1, !maximizing,static_eval));
+                self.unmake_move(&delta);
+            }
+            return value;
+        }
+    }
+    fn get_moves(&self) -> Vec<Vec<SnakeMove>>{
+        vec![vec![]]
+    }
+
+}
+impl FromStr for Direction {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "up" => Ok(Direction::Up),
+            "down" => Ok(Direction::Down),
+            "left" => Ok(Direction::Left),
+            "right" => Ok(Direction::Right),
+            _ => {
+                panic!("things happened")
+            }
+        }
     }
 }
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone, Copy)]
@@ -142,7 +211,7 @@ pub struct Coordinate {
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct SnakeMove {
-    pub snake_move: String,
+    pub snake_move: Direction,
     pub id: String,
 }
 
