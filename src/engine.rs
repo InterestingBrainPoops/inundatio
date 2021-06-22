@@ -169,11 +169,3 @@ fn flood_fill(board: &Move, seed: &Coordinate, counted: &mut Vec<Coordinate>) {
     flood_fill(board, &(*seed + Coordinate::new(-1, 0)), counted);
     flood_fill(board, &(*seed + Coordinate::new(1, 0)), counted);
 }
-//TODO:
-// make the move gen per snake. (presumably an implented function)
-// move gen per turn (ie if its my turn or the "other"'s turn.)
-// minimax implemented.
-// alpha beta implemented.
-fn minimax(state: &mut Move, depth: i32, maximizing: bool) -> i32 {
-    0
-}

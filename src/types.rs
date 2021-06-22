@@ -53,7 +53,7 @@ pub struct Delta {
 pub struct State {
     pub state: Move,       // current state
     pub dead: Vec<String>, // ids
-    pub turn: bool
+    pub turn: bool,
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
@@ -161,32 +161,36 @@ impl State {
 
     /// Depth is how far to search
     /// maximizing is whether the function is supposed to be maximizing or minimizing.
-    pub fn minimax(&mut self, depth: u8, maximizing: bool, static_eval : &dyn Fn(&Move) -> i32) -> i32 { 
+    pub fn minimax(
+        &mut self,
+        depth: u8,
+        maximizing: bool,
+        static_eval: &dyn Fn(&Move) -> i32,
+    ) -> i32 {
         if depth == 0 || self.dead.contains(&self.state.you.id) {
             static_eval(&self.state);
         }
         if maximizing {
             let mut value = i32::MIN;
-            for current_move in &self.get_moves() {
+            for current_move in &self.get_moves(maximizing) {
                 let delta = self.make_move(current_move);
-                value = i32::max(value,self.minimax(depth -1, !maximizing, static_eval));
+                value = i32::max(value, self.minimax(depth - 1, !maximizing, static_eval));
                 self.unmake_move(&delta);
             }
             return value;
-        }else {
+        } else {
             let mut value = i32::MAX;
-            for current_move in &self.get_moves() {
+            for current_move in &self.get_moves(maximizing) {
                 let delta = self.make_move(current_move);
-                value = i32::min(value,self.minimax(depth -1, !maximizing,static_eval));
+                value = i32::min(value, self.minimax(depth - 1, !maximizing, static_eval));
                 self.unmake_move(&delta);
             }
             return value;
         }
     }
-    fn get_moves(&self) -> Vec<Vec<SnakeMove>>{
+    fn get_moves(&self, turn: bool) -> Vec<Vec<SnakeMove>> {
         vec![vec![]]
     }
-
 }
 impl FromStr for Direction {
     type Err = ParseIntError;
