@@ -1,8 +1,8 @@
 use serde::Deserialize;
-use std::cmp::max;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
+use crate::cartprod;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Move {
     pub game: SentGame,
@@ -78,9 +78,6 @@ impl State {
                             Direction::Down => Coordinate::new(0, -1),
                             Direction::Left => Coordinate::new(-1, 0),
                             Direction::Right => Coordinate::new(1, 0),
-                            _ => {
-                                panic!("A move was not UDLR");
-                            }
                         };
                         snake.head += add;
                         snake.body.insert(0, snake.head);
@@ -113,27 +110,30 @@ impl State {
         //   head to head collision
         for snake in &self.state.board.snakes {
             if !self.dead.contains(&snake.id) {
-                if snake.health <= 0 { // out of health
-                    
+                if snake.health <= 0 {
+                    // out of health
+
                     out.died.push(snake.id.clone());
                     // no health
                 } else if snake.head.x < 0
                     || snake.head.y < 0
                     || snake.head.x >= self.state.board.width
                     || snake.head.y >= self.state.board.height
-                { // out of bounds
-                    
+                {
+                    // out of bounds
+
                     out.died.push(snake.id.clone());
                     // out of bounds
                 } else if snake.body.contains(&snake.head) {
-                    
                     out.died.push(snake.id.clone());
                 } else {
                     for opp in &self.state.board.snakes {
-                        if !self.dead.contains(&snake.id){// another battlesnake collision
+                        if !self.dead.contains(&snake.id) {
+                            // another battlesnake collision
                             if opp.body[1..].contains(&snake.head) {
                                 out.died.push(snake.id.clone());
-                            } else if opp.head == snake.head && snake.length <= opp.length {// head to head and losing.
+                            } else if opp.head == snake.head && snake.length <= opp.length {
+                                // head to head and losing.
                                 out.died.push(snake.id.clone());
                             }
                         }
@@ -149,7 +149,7 @@ impl State {
         for tail in &delta.tails {
             for snake in &mut self.state.board.snakes {
                 if tail.0 == snake.id {
-                    snake.body.insert(0,tail.1);
+                    snake.body.insert(0, tail.1);
                 }
             }
         }
@@ -178,15 +178,15 @@ impl State {
         }
         if maximizing {
             let mut value = i32::MIN;
-            for current_move in &self.get_moves(maximizing) {
-                let delta = self.make_move(current_move);
+            for current_move in &self.state.you.get_moves() {
+                let delta = self.make_move(&vec![current_move.clone()]);
                 value = i32::max(value, self.minimax(depth - 1, !maximizing, static_eval));
                 self.unmake_move(&delta);
             }
             return value;
         } else {
             let mut value = i32::MAX;
-            for current_move in &self.get_moves(maximizing) {
+            for current_move in &self.get_moves() {
                 let delta = self.make_move(current_move);
                 value = i32::min(value, self.minimax(depth - 1, !maximizing, static_eval));
                 self.unmake_move(&delta);
@@ -194,8 +194,20 @@ impl State {
             return value;
         }
     }
-    fn get_moves(&self, turn: bool) -> Vec<Vec<SnakeMove>> {
-        vec![vec![]]
+    /// It will return a 2D array of moves for the opposing team.
+    fn get_moves(&self) -> Vec<Vec<SnakeMove>> {
+        let mut out:Vec<Vec<SnakeMove>> = vec![];
+        for x in (&self.state.board.snakes).into_iter().filter(|x| x.id != self.state.you.id) {
+            out.push(x.get_moves());
+        }
+        cartprod::cartesian_product(out)
+    }
+}
+
+impl Battlesnake {
+    pub fn get_moves(&self) -> Vec<SnakeMove> {
+        let out = vec![SnakeMove::new(Direction::Up, self.id.clone()), SnakeMove::new(Direction::Down, self.id.clone()), SnakeMove::new(Direction::Left, self.id.clone()), SnakeMove::new(Direction::Right, self.id.clone())];
+        out
     }
 }
 impl FromStr for Direction {
@@ -224,7 +236,14 @@ pub struct SnakeMove {
     pub snake_move: Direction,
     pub id: String,
 }
-
+impl SnakeMove {
+    pub fn new(dir : Direction, id : String) -> SnakeMove {
+        SnakeMove {
+            snake_move : dir,
+            id,
+        }
+    }
+}
 impl ops::AddAssign<Coordinate> for Coordinate {
     fn add_assign(&mut self, rhs: Coordinate) {
         self.x += rhs.x;
