@@ -132,7 +132,7 @@ impl State {
                             if opp.body[1..].contains(&snake.head) {
                                 out.died.push(snake.id.clone());
                                 break;
-                            } else if opp.head == snake.head && snake.length <= opp.length {
+                            } else if opp.head == snake.head && snake.length <= opp.length && snake.id != opp.id {
                                 // head to head and losing.
                                 out.died.push(snake.id.clone());
                                 break;
