@@ -123,7 +123,7 @@ impl State {
 
                     out.died.push(snake.id.clone());
                     // out of bounds
-                } else if snake.body.contains(&snake.head) {
+                } else if snake.body[1..].contains(&snake.head) {
                     out.died.push(snake.id.clone());
                 } else {
                     for opp in &self.state.board.snakes {
