@@ -127,7 +127,7 @@ impl State {
                     out.died.push(snake.id.clone());
                 } else {
                     for opp in &self.state.board.snakes {
-                        if !self.dead.contains(&snake.id) {
+                        if !self.dead.contains(&opp.id) {
                             // another battlesnake collision
                             if opp.body[1..].contains(&snake.head) {
                                 out.died.push(snake.id.clone());
@@ -155,8 +155,10 @@ impl State {
         // remove the heads
         // increase all snake health by 1
         for snake in &mut self.state.board.snakes {
-            snake.health += 1;
-            snake.body.pop();
+            if !self.dead.contains(&snake.id){
+                snake.health += 1;
+                snake.body.pop();
+            }
         }
         // revive all killed snakes
         self.dead.retain(|x| !delta.died.contains(x));
@@ -174,8 +176,9 @@ impl State {
         maximizing: bool,
         static_eval: &dyn Fn(&Move) -> i32,
     ) -> (i32, i32, i32) {
+        println!("Depth: {}", depth);
         if depth == 0 || self.dead.contains(&self.state.you.id) {
-            static_eval(&self.state);
+            return (static_eval(&self.state), alpha, beta);
         }
         if maximizing {
             let mut value = i32::MIN;
