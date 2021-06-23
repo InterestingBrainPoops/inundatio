@@ -147,7 +147,10 @@ impl State {
         out
     }
     fn unmake_move(&mut self, delta: &Delta) {
+        // revive all killed snakes
+        self.dead.retain(|x| !delta.died.contains(x));
         // add tails back to snakes
+        // and remove all heads
         for tail in &delta.tails {
             for snake in &mut self.state.board.snakes {
                 if tail.0 == snake.id {
@@ -160,11 +163,10 @@ impl State {
         for snake in &mut self.state.board.snakes {
             if !self.dead.contains(&snake.id){
                 snake.health += 1;
-                snake.body.pop();
+                snake.body.remove(0);
             }
         }
-        // revive all killed snakes
-        self.dead.retain(|x| !delta.died.contains(x));
+        
         // put all food back
         self.state.board.food.append(&mut delta.eaten_food.clone());
         
