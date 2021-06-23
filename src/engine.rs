@@ -30,7 +30,7 @@ pub fn get_move(sent_move: &Move) -> (&str, Coordinate, i32) {
 // higher is better
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
-fn eval(board: &Move) -> i32 {
+pub fn eval(board: &Move) -> i32 {
     {
         // check if dead
         // if dead, then return i32 min

@@ -1,8 +1,8 @@
+use crate::cartprod;
 use serde::Deserialize;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
-use crate::cartprod;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Move {
     pub game: SentGame,
@@ -53,12 +53,11 @@ pub struct Delta {
 pub struct State {
     pub state: Move,       // current state
     pub dead: Vec<String>, // ids
-    pub turn: bool,
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
     // at least i think
-    pub fn make_move(&mut self, moves: &Vec<SnakeMove>) -> Delta {
+    fn make_move(&mut self, moves: &Vec<SnakeMove>) -> Delta {
         let mut out = Delta {
             died: vec![],
             tails: vec![],
@@ -144,7 +143,7 @@ impl State {
         self.dead.append(&mut out.died.clone());
         out
     }
-    pub fn unmake_move(&mut self, delta: &Delta) {
+    fn unmake_move(&mut self, delta: &Delta) {
         // add tails back to snakes
         for tail in &delta.tails {
             for snake in &mut self.state.board.snakes {
@@ -167,12 +166,14 @@ impl State {
 
     /// Depth is how far to search
     /// maximizing is whether the function is supposed to be maximizing or minimizing.
-    pub fn minimax(
+    fn minimax(
         &mut self,
         depth: u8,
+        mut alpha: i32,
+        mut beta: i32,
         maximizing: bool,
         static_eval: &dyn Fn(&Move) -> i32,
-    ) -> i32 {
+    ) -> (i32, i32, i32) {
         if depth == 0 || self.dead.contains(&self.state.you.id) {
             static_eval(&self.state);
         }
@@ -180,33 +181,73 @@ impl State {
             let mut value = i32::MIN;
             for current_move in &self.state.you.get_moves() {
                 let delta = self.make_move(&vec![current_move.clone()]);
-                value = i32::max(value, self.minimax(depth - 1, !maximizing, static_eval));
+                value = i32::max(
+                    value,
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval).0,
+                );
                 self.unmake_move(&delta);
+                if value >= beta {
+                    break; // beta cutoff
+                }
+                alpha = i32::max(alpha, value);
             }
-            return value;
+            return (value,alpha,beta);
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves() {
                 let delta = self.make_move(current_move);
-                value = i32::min(value, self.minimax(depth - 1, !maximizing, static_eval));
+                value = i32::min(
+                    value,
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval).0,
+                );
                 self.unmake_move(&delta);
+                if value <= alpha {
+                    break;
+                }
+                beta = i32::min(beta, value);
             }
-            return value;
+            return (value,alpha,beta);
         }
     }
     /// It will return a 2D array of moves for the opposing team.
     fn get_moves(&self) -> Vec<Vec<SnakeMove>> {
-        let mut out:Vec<Vec<SnakeMove>> = vec![];
-        for x in (&self.state.board.snakes).into_iter().filter(|x| x.id != self.state.you.id) {
+        let mut out: Vec<Vec<SnakeMove>> = vec![];
+        for x in (&self.state.board.snakes)
+            .into_iter()
+            .filter(|x| x.id != self.state.you.id)
+        {
             out.push(x.get_moves());
         }
         cartprod::cartesian_product(out)
+    }
+    pub fn get_best(&mut self, static_eval: &dyn Fn(&Move) -> i32) -> (Direction , &str , i32){
+        let mut out = vec![(Direction::Up,"up", 0),(Direction::Down, "down", 0),(Direction::Left, "left",0),(Direction::Right, "right",0)];
+        let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
+        for x in &mut out {
+            self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
+            let a = self.minimax(5,alpha,beta,true, static_eval);
+            x.2 = a.0;
+            alpha = a.1;
+            beta = a.2;
+        }
+        let mut biggest = &out[0];
+        for x in &out[1..] {
+            if biggest.2 < x.2 {
+                biggest = x;
+            }
+        }
+        *biggest
     }
 }
 
 impl Battlesnake {
     pub fn get_moves(&self) -> Vec<SnakeMove> {
-        let out = vec![SnakeMove::new(Direction::Up, self.id.clone()), SnakeMove::new(Direction::Down, self.id.clone()), SnakeMove::new(Direction::Left, self.id.clone()), SnakeMove::new(Direction::Right, self.id.clone())];
+        let out = vec![
+            SnakeMove::new(Direction::Up, self.id.clone()),
+            SnakeMove::new(Direction::Down, self.id.clone()),
+            SnakeMove::new(Direction::Left, self.id.clone()),
+            SnakeMove::new(Direction::Right, self.id.clone()),
+        ];
         out
     }
 }
@@ -237,9 +278,9 @@ pub struct SnakeMove {
     pub id: String,
 }
 impl SnakeMove {
-    pub fn new(dir : Direction, id : String) -> SnakeMove {
+    pub fn new(dir: Direction, id: String) -> SnakeMove {
         SnakeMove {
-            snake_move : dir,
+            snake_move: dir,
             id,
         }
     }
