@@ -142,6 +142,7 @@ impl State {
                 }
             }
         }
+        println!("{}", self.state.board.food.len());
         self.dead.append(&mut out.died.clone());
         out
     }
@@ -166,6 +167,7 @@ impl State {
         self.dead.retain(|x| !delta.died.contains(x));
         // put all food back
         self.state.board.food.append(&mut delta.eaten_food.clone());
+        
     }
 
     /// Depth is how far to search
