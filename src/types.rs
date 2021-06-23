@@ -131,9 +131,11 @@ impl State {
                             // another battlesnake collision
                             if opp.body[1..].contains(&snake.head) {
                                 out.died.push(snake.id.clone());
+                                break;
                             } else if opp.head == snake.head && snake.length <= opp.length {
                                 // head to head and losing.
                                 out.died.push(snake.id.clone());
+                                break;
                             }
                         }
                     }
@@ -177,7 +179,7 @@ impl State {
         static_eval: &dyn Fn(&Move) -> i32,
     ) -> (i32, i32, i32) {
         println!("Depth: {}", depth);
-        if depth == 0 || self.dead.contains(&self.state.you.id) {
+        if depth == 0 || self.dead.contains(&self.state.you.id){
             return (static_eval(&self.state), alpha, beta);
         }
         if maximizing {
@@ -228,7 +230,7 @@ impl State {
         let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
         for x in &mut out {
             self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
-            let a = self.minimax(5,alpha,beta,true, static_eval);
+            let a = self.minimax(5,alpha,beta,false, static_eval);
             x.2 = a.0;
             alpha = a.1;
             beta = a.2;
