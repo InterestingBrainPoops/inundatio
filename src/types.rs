@@ -232,6 +232,7 @@ impl State {
             self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
             let a = self.minimax(5,alpha,beta,false, static_eval);
             x.2 = a.0;
+            println!("{}", x.2);
             alpha = a.1;
             beta = a.2;
         }
