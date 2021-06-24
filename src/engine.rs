@@ -79,16 +79,13 @@ pub fn eval(board: &Move) -> i32 {
     }
     if smallest.length < board.you.length && board.board.snakes.len() != 0 {
         target = smallest.head;
-        println!(
-            "Choosing Snake at distance {}",
-            manhattan(&board.you.head, &target)
-        )
+        
     } else {
         target = board.board.food[food_scores[0].0];
-        println!("Choosing Food at distance {}", food_scores[0].1);
+        
     }
 
-    println!("FF SCORE : {}", reachable_squares.len());
+    
 
     food_scores.len() as i32 + reachable_squares.len() as i32
         - manhattan(&board.you.head, &target) * 4
