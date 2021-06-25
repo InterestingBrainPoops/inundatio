@@ -184,7 +184,6 @@ impl State {
                 }
             }
         }
-        
     }
 
     /// Depth is how far to search
@@ -196,9 +195,11 @@ impl State {
         mut beta: i32,
         maximizing: bool,
         static_eval: &dyn Fn(&Move, &Vec<String>) -> i32,
+        count : &mut i32,
     ) -> (i32, i32, i32) {
         
         if depth == 0 || self.dead.contains(&self.state.you.id) || self.state.board.snakes.len() - self.dead.len()  == 1 {
+            *count += 1;
             if(self.dead.contains(&self.state.you.id)){
                 return (i32::MIN,alpha,beta);
             }else if self.state.board.snakes.len() - self.dead.len() == 1{
@@ -212,7 +213,7 @@ impl State {
                 let delta = self.make_move(&vec![current_move.clone()]);
                 value = i32::max(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval,count)
                         .0,
                 );
                 self.unmake_move(&delta);
@@ -228,7 +229,7 @@ impl State {
                 let delta = self.make_move(current_move);
                 value = i32::min(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval,count)
                         .0,
                 );
                 self.unmake_move(&delta);
@@ -256,10 +257,11 @@ impl State {
     pub fn get_best(&mut self, static_eval: &dyn Fn(&Move, &Vec<String>) -> i32) -> (Direction, &str, i32) {
         let mut out = vec![(Direction::Up,"up", 0),(Direction::Down, "down", 0),(Direction::Left, "left",0),(Direction::Right, "right",0)];
         let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
-        let e = self.clone();
         for x in &mut out {
             let delta = self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
-            let a = self.minimax(5,alpha,beta,false, static_eval);
+            let mut count = 0;
+            let a = self.minimax(5,alpha,beta,false, static_eval, &mut count);
+            println!("Total number of end states reached: {}", count);
             self.unmake_move(&delta);
             x.2 = a.0;
             
