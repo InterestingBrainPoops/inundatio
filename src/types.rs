@@ -259,7 +259,7 @@ impl State {
             alpha = a.1;
             beta = a.2;
         }
-        assert_eq!(e, *self);
+        // assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
             if biggest.2 < x.2 {
