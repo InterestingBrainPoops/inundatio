@@ -159,20 +159,6 @@ impl State {
         self.dead.retain(|x| !delta.died.contains(x));
         // add tails back to snakes
         // and remove all heads
-        for tail in &delta.tails {
-            for snake in &mut self.state.board.snakes {
-                if tail.0 == snake.id {
-                    snake.body.push(tail.1);
-                    snake.health += 1;
-                    snake.body.remove(0);
-                    snake.head = snake.body[0];
-                    snake.length = snake.body.len() as u16;
-                    if snake.id == self.state.you.id {
-                        self.state.you = snake.clone();
-                    }
-                }
-            }
-        }
         for food in &delta.eaten_food {
             for snake in &mut self.state.board.snakes {
                 if food.0 == snake.id {
@@ -182,6 +168,20 @@ impl State {
                 }
             }
         }
+        for tail in &delta.tails {
+            for snake in &mut self.state.board.snakes {
+                if tail.0 == snake.id {
+                    snake.body.push(tail.1);
+                    snake.health += 1;
+                    snake.body.remove(0);
+                    snake.head = snake.body[0];
+                    if snake.id == self.state.you.id {
+                        self.state.you = snake.clone();
+                    }
+                }
+            }
+        }
+        
     }
 
     /// Depth is how far to search
@@ -248,7 +248,7 @@ impl State {
     pub fn get_best(&mut self, static_eval: &dyn Fn(&Move) -> i32) -> (Direction, &str, i32) {
         let mut out = vec![(Direction::Up,"up", 0),(Direction::Down, "down", 0),(Direction::Left, "left",0),(Direction::Right, "right",0)];
         let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
-        let e = self.clone();
+        // let e = self.clone();
         for x in &mut out {
             let delta = self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
             let a = self.minimax(5,alpha,beta,false, static_eval);
