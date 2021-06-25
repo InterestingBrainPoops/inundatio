@@ -285,11 +285,12 @@ impl State {
         let mut alpha = i32::MIN;
         let mut beta = i32::MAX;
         let mut count = Duration::new(0,0);
+        let e = self.clone();
         for x in &mut out {
             let delta = self.make_move(&vec![SnakeMove::new(x.0, self.state.you.id.clone())]);
             
             let a = self.minimax( 13, alpha, beta, false, static_eval, &mut count);
-            
+            println!("move: {}, score: {}",x.1, a.0);
             self.unmake_move(&delta);
             x.2 = a.0;
 
@@ -297,7 +298,7 @@ impl State {
             beta = a.2;
         }
         println!("Total eval time: {:?}", count);
-        // assert_eq!(e, *self);
+        assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
             if biggest.2 < x.2 {
