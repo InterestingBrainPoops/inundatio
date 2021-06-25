@@ -5,8 +5,15 @@ use crate::types::*;
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
 pub fn eval(board: &Move, dead: &Vec<String>) -> i32 {
+    let mut closest_pos = (&Coordinate::new(100, 100), 3000);
+    for food in &board.board.food {
+        if closest_pos.1 > manhattan(food, &board.you.head) {
+            closest_pos.1 = manhattan(food, &board.you.head);
+            closest_pos.0 = food;
+        }
+    }
     (board.you.length * 4) as i32
-        - ((board.board.snakes.len() - dead.len()) * 5) as i32
+        - ((board.board.snakes.len() - dead.len()) * 5) as i32 - closest_pos.1 * 10
 }
 
 /// returns the manhattan distance between the 2 points.
