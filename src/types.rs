@@ -47,7 +47,7 @@ pub struct Battlesnake {
 pub struct Delta {
     pub died: Vec<String>, // the ids of the snakes that died during this turn
     pub tails: Vec<(String, Coordinate)>, // the tails of the snakes that were removed during this turn
-    pub eaten_food: Vec<Coordinate>, // the positions of the food that were eaten during this turn ( if any )
+    pub eaten_food: Vec<(String, Coordinate)>, // the positions of the food that were eaten during this turn ( if any )
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct State {
@@ -90,7 +90,7 @@ impl State {
                         // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
                         match self.state.board.food.iter().position(|&r| r == snake.head) {
                             Some(index) => {
-                                out.eaten_food.push(self.state.board.food.remove(index)); // removes the food at the given index.
+                                out.eaten_food.push((snake.id.clone(), self.state.board.food.remove(index))); // removes the food at the given index.
                                 snake.health = 100;
                                 snake.body.push(snake.body[snake.body.len() - 1]); // basically dupes the tail.
                                 snake.length += 1;
@@ -173,8 +173,15 @@ impl State {
                 }
             }
         }
-        // put all food back
-        self.state.board.food.append(&mut delta.eaten_food.clone());
+        for food in &delta.eaten_food {
+            for snake in &mut self.state.board.snakes {
+                if food.0 == snake.id {
+                    self.state.board.food.push(food.1);
+                    snake.body.pop();
+                    snake.length -= 1;
+                }
+            }
+        }
     }
 
     /// Depth is how far to search
