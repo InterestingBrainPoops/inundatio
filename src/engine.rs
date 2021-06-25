@@ -2,35 +2,11 @@ use std::i32::MIN;
 
 use crate::types::*;
 // gets the best move given a board state.
-pub fn get_move(sent_move: &Move) -> (&str, Coordinate, i32) {
-    let mut possible_moves = vec![
-        ("up", Coordinate::new(0, 1), 0 as i32),
-        ("down", Coordinate::new(0, -1), 0 as i32),
-        ("left", Coordinate::new(-1, 0), 0 as i32),
-        ("right", Coordinate::new(1, 0), 0 as i32),
-    ];
-    // ^ all the possible moves ( 4 of them), their scores, and what they do.
-    for x in &mut possible_moves {
-        // iterate through all possible moves
-        let mut board_new = sent_move.clone(); // clone the board.
-        make_move(&mut board_new, &(sent_move.you.head + x.1)); // make the move on the board
-        x.2 = eval(&board_new); // evaluate the board
-    }
-    // get the highest score, return the tuple.
-    let mut biggest = possible_moves[0];
-    for x in possible_moves {
-        println!("Move: {}, Score: {}", x.0, x.2);
-        if x.2 > biggest.2 {
-            biggest = x;
-        }
-    }
-    biggest
-}
 
 // higher is better
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
-pub fn eval(board: &Move) -> i32 {
+pub fn eval(board: &Move, dead: usize) -> i32 {
     {
         // check if dead
         // if dead, then return i32 min
@@ -52,43 +28,8 @@ pub fn eval(board: &Move) -> i32 {
     }
     let mut reachable_squares = vec![];
     flood_fill(board, &board.you.head, &mut reachable_squares);
-
-    if self::lost(board) {
-        return MIN;
-    } // if i lost, then return the minimum
-    let mut food_scores: Vec<(usize, i32)> = vec![]; // create the food scores array.
-    let target;
-    for (index, foodpos) in board.board.food.iter().enumerate() {
-        if reachable_squares.iter().any(|&i| i == *foodpos) {
-            // checks if the food is reachable.
-            food_scores.push((index, manhattan(&board.you.head, foodpos))); // populate the foodscores array
-        } else {
-            food_scores.push((index, 10000)); // basically if the food isnt reachable, then make it so.
-        }
-    }
-    food_scores.sort_by(|a, b| a.1.cmp(&b.1)); // sort by distance, least to greatest
-
-    // get the smallest snake
-    let mut smallest = &board.board.snakes[0];
-    for snake in &board.board.snakes {
-        // loop through all snakes
-        if smallest.length > snake.length && snake.id.ne(&board.you.id) {
-            // if smallest isn't the smallest, make it the smallest
-            smallest = snake;
-        }
-    }
-    if smallest.length < board.you.length && board.board.snakes.len() != 0 {
-        target = smallest.head;
-        
-    } else {
-        target = board.board.food[food_scores[0].0];
-        
-    }
-
-    
-
-    food_scores.len() as i32 + reachable_squares.len() as i32
-        + (board.you.length * 4 )as i32
+    reachable_squares.len() as i32
+        + (board.you.length * 4 )as i32 - ((board.board.snakes.len()  - dead) * 5) as i32
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.

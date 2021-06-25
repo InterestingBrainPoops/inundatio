@@ -81,6 +81,7 @@ impl State {
                         };
                         snake.head += add;
                         snake.body.insert(0, snake.head);
+                        println!("{}", snake.body.len());
                         match snake.body.pop() {
                             Some(x) => {
                                 out.tails.push((snake.id.clone(), x));
@@ -157,6 +158,7 @@ impl State {
     fn unmake_move(&mut self, delta: &Delta) {
         // revive all killed snakes
         self.dead.retain(|x| !delta.died.contains(x));
+        
         // add tails back to snakes
         // and remove all heads
         for food in &delta.eaten_food {
@@ -193,14 +195,14 @@ impl State {
         mut alpha: i32,
         mut beta: i32,
         maximizing: bool,
-        static_eval: &dyn Fn(&Move) -> i32,
+        static_eval: &dyn Fn(&Move, usize) -> i32,
     ) -> (i32, i32, i32) {
         
         if depth == 0 || self.dead.contains(&self.state.you.id) {
             if(self.dead.contains(&self.state.you.id)){
                 return (i32::MIN,alpha,beta);
             }
-            return (static_eval(&self.state), alpha, beta);
+            return (static_eval(&self.state, self.dead.len()), alpha, beta);
         }
         if maximizing {
             let mut value = i32::MIN;
@@ -249,7 +251,7 @@ impl State {
 
         x
     }
-    pub fn get_best(&mut self, static_eval: &dyn Fn(&Move) -> i32) -> (Direction, &str, i32) {
+    pub fn get_best(&mut self, static_eval: &dyn Fn(&Move, usize) -> i32) -> (Direction, &str, i32) {
         let mut out = vec![(Direction::Up,"up", 0),(Direction::Down, "down", 0),(Direction::Left, "left",0),(Direction::Right, "right",0)];
         let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
         let e = self.clone();
