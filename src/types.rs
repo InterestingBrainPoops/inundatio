@@ -197,6 +197,9 @@ impl State {
     ) -> (i32, i32, i32) {
         
         if depth == 0 || self.dead.contains(&self.state.you.id) {
+            if(self.dead.contains(&self.you.id)){
+                return i32::MIN;
+            }
             return (static_eval(&self.state), alpha, beta);
         }
         if maximizing {
