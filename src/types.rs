@@ -206,7 +206,7 @@ impl State {
             || self.state.board.snakes.len() - self.dead.len() == 1
         {
             
-            if (self.dead.contains(&self.state.you.id)) {
+            if self.dead.contains(&self.state.you.id) {
                 return (i32::MIN, alpha, beta);
             } else if self.state.board.snakes.len() - self.dead.len() == 1 {
                 return (i32::MAX, alpha, beta);
@@ -288,7 +288,7 @@ impl State {
         for x in &mut out {
             let delta = self.make_move(&vec![SnakeMove::new(x.0, self.state.you.id.clone())]);
             
-            let a = self.minimax( 5, alpha, beta, false, static_eval, &mut count);
+            let a = self.minimax( 13, alpha, beta, false, static_eval, &mut count);
             
             self.unmake_move(&delta);
             x.2 = a.0;

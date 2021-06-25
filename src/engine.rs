@@ -13,7 +13,7 @@ pub fn eval(board: &Move, dead: &Vec<String>) -> i32 {
         }
     }
     (board.you.length * 4) as i32
-        - ((board.board.snakes.len() - dead.len()) * 5) as i32 - closest_pos.1 * 10
+        - ((board.board.snakes.len() - dead.len()) * 5) as i32 - closest_pos.1 / ((board.board.width + board.board.height) as i32) * 3
 }
 
 /// returns the manhattan distance between the 2 points.
