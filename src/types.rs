@@ -81,7 +81,7 @@ impl State {
                         };
                         snake.head += add;
                         snake.body.insert(0, snake.head);
-                        println!("{}", snake.body.len());
+                        // println!("{}", snake.body.len());
                         match snake.body.pop() {
                             Some(x) => {
                                 out.tails.push((snake.id.clone(), x));
