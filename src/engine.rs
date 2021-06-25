@@ -88,7 +88,7 @@ pub fn eval(board: &Move) -> i32 {
     
 
     food_scores.len() as i32 + reachable_squares.len() as i32
-        - manhattan(&board.you.head, &target) * 4
+        + (board.you.length * 4 )as i32
 }
 // makes the following move on the board given.
 // Only applies the move to YOU.
