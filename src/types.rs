@@ -298,7 +298,7 @@ impl State {
             beta = a.2;
         }
         println!("Total eval time: {:?}", count);
-        assert_eq!(e, *self);
+        // assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
             if biggest.2 < x.2 {
