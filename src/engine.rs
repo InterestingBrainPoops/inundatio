@@ -5,11 +5,10 @@ use crate::types::*;
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
 pub fn eval(board: &Move, dead: &Vec<String>) -> i32 {
-    
     let mut reachable_squares = vec![];
     flood_fill(board, &board.you.head, &mut reachable_squares, &dead);
-    reachable_squares.len() as i32
-        + (board.you.length * 4 )as i32 - ((board.board.snakes.len()  - dead.len()) * 5) as i32
+    reachable_squares.len() as i32 + (board.you.length * 4) as i32
+        - ((board.board.snakes.len() - dead.len()) * 5) as i32
 }
 
 /// returns the manhattan distance between the 2 points.
@@ -28,7 +27,7 @@ fn flood_fill(board: &Move, seed: &Coordinate, counted: &mut Vec<Coordinate>, de
         return; // out of bounds
     }
     for x in &board.board.snakes {
-        if dead.contains(&x.id) { 
+        if dead.contains(&x.id) {
             continue; // doesnt check against dead snakes.
         }
         for pos in &x.body[..] {

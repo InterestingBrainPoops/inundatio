@@ -3,6 +3,8 @@ use serde::Deserialize;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
+use std::time::Duration;
+use std::time::Instant;
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
     pub game: SentGame,
@@ -47,7 +49,7 @@ pub struct Battlesnake {
 pub struct Delta {
     pub died: Vec<String>, // the ids of the snakes that died during this turn
     pub tails: Vec<(String, Coordinate)>, // the tails of the snakes that were removed during this turn
-    pub eaten_food: Vec<(String,u8, Coordinate)>, // (id, previous health, where the food was)
+    pub eaten_food: Vec<(String, u8, Coordinate)>, // (id, previous health, where the food was)
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct State {
@@ -67,7 +69,6 @@ impl State {
         for snake in &mut self.state.board.snakes {
             // checks that the snake is alive.
             if !self.dead.contains(&snake.id) {
-                
                 for snakes_move in moves {
                     // this entire block here just moves the snakes in the direction they chose
                     if snake.id == snakes_move.id {
@@ -91,20 +92,23 @@ impl State {
                         // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
                         match self.state.board.food.iter().position(|&r| r == snake.head) {
                             Some(index) => {
-                                out.eaten_food.push((snake.id.clone(),snake.health,  self.state.board.food.remove(index))); // removes the food at the given index.
+                                out.eaten_food.push((
+                                    snake.id.clone(),
+                                    snake.health,
+                                    self.state.board.food.remove(index),
+                                )); // removes the food at the given index.
                                 snake.health = 100;
                                 snake.body.push(snake.body[snake.body.len() - 1]); // basically dupes the tail.
                                 snake.length += 1;
                             }
                             None => {}
                         }
-        
+
                         if snake.id.eq(&self.state.you.id) {
                             self.state.you = snake.clone();
                         }
                     }
                 }
-                
             }
         }
         // following kills snakes if they are:
@@ -152,17 +156,18 @@ impl State {
         }
 
         self.dead.append(&mut out.died.clone());
-        
+
         out
     }
     fn unmake_move(&mut self, delta: &Delta) {
         // revive all killed snakes
         self.dead.retain(|x| !delta.died.contains(x));
-        
+
         // add tails back to snakes
         // and remove all heads
-        for food in &delta.eaten_food {
-            for snake in &mut self.state.board.snakes {
+
+        for snake in &mut self.state.board.snakes {
+            for food in &delta.eaten_food {
                 if food.0 == snake.id {
                     self.state.board.food.push(food.2);
                     snake.health = food.1;
@@ -170,9 +175,8 @@ impl State {
                     snake.length -= 1;
                 }
             }
-        }
-        for tail in &delta.tails {
-            for snake in &mut self.state.board.snakes {
+            for tail in &delta.tails {
+                
                 if tail.0 == snake.id {
                     snake.body.push(tail.1);
                     snake.health += 1;
@@ -195,17 +199,23 @@ impl State {
         mut beta: i32,
         maximizing: bool,
         static_eval: &dyn Fn(&Move, &Vec<String>) -> i32,
-        count : &mut i32,
+        count: &mut Duration,
     ) -> (i32, i32, i32) {
-        
-        if depth == 0 || self.dead.contains(&self.state.you.id) || self.state.board.snakes.len() - self.dead.len()  == 1 {
-            *count += 1;
-            if(self.dead.contains(&self.state.you.id)){
-                return (i32::MIN,alpha,beta);
-            }else if self.state.board.snakes.len() - self.dead.len() == 1{
+        if depth == 0
+            || self.dead.contains(&self.state.you.id)
+            || self.state.board.snakes.len() - self.dead.len() == 1
+        {
+            
+            if (self.dead.contains(&self.state.you.id)) {
+                return (i32::MIN, alpha, beta);
+            } else if self.state.board.snakes.len() - self.dead.len() == 1 {
                 return (i32::MAX, alpha, beta);
             }
-            return (static_eval(&self.state, &self.dead), alpha, beta);
+            let start = Instant::now();
+            let x = (static_eval(&self.state, &self.dead), alpha, beta);
+            *count += start.elapsed();
+            return x;
+            
         }
         if maximizing {
             let mut value = i32::MIN;
@@ -213,7 +223,7 @@ impl State {
                 let delta = self.make_move(&vec![current_move.clone()]);
                 value = i32::max(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval,count)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
                 self.unmake_move(&delta);
@@ -229,7 +239,7 @@ impl State {
                 let delta = self.make_move(current_move);
                 value = i32::min(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval,count)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
                 self.unmake_move(&delta);
@@ -254,20 +264,31 @@ impl State {
 
         x
     }
-    pub fn get_best(&mut self, static_eval: &dyn Fn(&Move, &Vec<String>) -> i32) -> (Direction, &str, i32) {
-        let mut out = vec![(Direction::Up,"up", 0),(Direction::Down, "down", 0),(Direction::Left, "left",0),(Direction::Right, "right",0)];
-        let mut  alpha= i32::MIN;let mut  beta = i32::MAX;
+    pub fn get_best(
+        &mut self,
+        static_eval: &dyn Fn(&Move, &Vec<String>) -> i32,
+    ) -> (Direction, &str, i32) {
+        let mut out = vec![
+            (Direction::Up, "up", 0),
+            (Direction::Down, "down", 0),
+            (Direction::Left, "left", 0),
+            (Direction::Right, "right", 0),
+        ];
+        let mut alpha = i32::MIN;
+        let mut beta = i32::MAX;
+        let mut count = Duration::new(0,0);
         for x in &mut out {
-            let delta = self.make_move(&vec![SnakeMove::new(x.0,self.state.you.id.clone())]);
-            let mut count = 0;
-            let a = self.minimax(5,alpha,beta,false, static_eval, &mut count);
-            println!("Total number of end states reached: {}", count);
+            let delta = self.make_move(&vec![SnakeMove::new(x.0, self.state.you.id.clone())]);
+            
+            let a = self.minimax(5, alpha, beta, false, static_eval, &mut count);
+            
             self.unmake_move(&delta);
             x.2 = a.0;
-            
+
             alpha = a.1;
             beta = a.2;
         }
+        println!("Total eval time: {:?}", count);
         // assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
@@ -276,7 +297,6 @@ impl State {
             }
         }
         *biggest
-        
     }
 }
 
