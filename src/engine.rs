@@ -5,9 +5,7 @@ use crate::types::*;
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
 pub fn eval(board: &Move, dead: &Vec<String>) -> i32 {
-    let mut reachable_squares = vec![];
-    flood_fill(board, &board.you.head, &mut reachable_squares, &dead);
-    reachable_squares.len() as i32 + (board.you.length * 4) as i32
+    (board.you.length * 4) as i32
         - ((board.board.snakes.len() - dead.len()) * 5) as i32
 }
 

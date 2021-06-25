@@ -220,13 +220,17 @@ impl State {
         if maximizing {
             let mut value = i32::MIN;
             for current_move in &self.state.you.get_moves() {
+                let start = Instant::now();
                 let delta = self.make_move(&vec![current_move.clone()]);
+                *count += start.elapsed();
                 value = i32::max(
                     value,
                     self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
+                let start = Instant::now();
                 self.unmake_move(&delta);
+                *count += start.elapsed();
                 if value >= beta {
                     break; // beta cutoff
                 }
@@ -236,13 +240,17 @@ impl State {
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves() {
+                let start = Instant::now();
                 let delta = self.make_move(current_move);
+                *count += start.elapsed();
                 value = i32::min(
                     value,
                     self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
+                let start = Instant::now();
                 self.unmake_move(&delta);
+                *count += start.elapsed();
                 if value <= alpha {
                     break;
                 }
@@ -280,7 +288,7 @@ impl State {
         for x in &mut out {
             let delta = self.make_move(&vec![SnakeMove::new(x.0, self.state.you.id.clone())]);
             
-            let a = self.minimax(5, alpha, beta, false, static_eval, &mut count);
+            let a = self.minimax( 5, alpha, beta, false, static_eval, &mut count);
             
             self.unmake_move(&delta);
             x.2 = a.0;
