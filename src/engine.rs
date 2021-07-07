@@ -1,10 +1,11 @@
 use crate::types::*;
+use crate::small::SmallMove;
 // gets the best move given a board state.
 
 // higher is better
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
-pub fn eval(board: &Move, dead: &Vec<String>) -> i32 {
+pub fn eval(board: &SmallMove, dead: &Vec<u8>) -> i32 {
     let mut closest_pos = (&Coordinate::new(100, 100), 3000);
     for food in &board.board.food {
         if closest_pos.1 > manhattan(food, &board.you.head) {

@@ -1,6 +1,7 @@
 mod cartprod;
 mod engine;
 mod types;
+mod small;
 
 use dotenv::dotenv;
 use serde_json::json;
@@ -32,7 +33,7 @@ async fn main() {
         .and_then(|sent_move: Move| async move {
             let start = Instant::now();
             println!("GOT MOVE");
-            let mut state = State{state:sent_move.clone(), dead: vec![]};
+            let mut state = State{state:sent_move.into_small(), dead: vec![]};
             let out_move;
             out_move = state.get_best(&engine::eval);
             println!("Turn: {}, ToMove: {:?}, Score: {}",sent_move.turn , out_move.0, out_move.2);
