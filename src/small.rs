@@ -1,5 +1,5 @@
+use crate::types::{Coordinate, Direction};
 use serde::Deserialize;
-use crate::{Coordinate, types::Direction};
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct SmallBattleSnake {
     pub id: u8,
@@ -9,7 +9,7 @@ pub struct SmallBattleSnake {
     pub length: u16,
 }
 impl SmallBattleSnake {
-    pub fn get_moves(&self)-> Vec<(Direction, u8)>{
+    pub fn get_moves(&self) -> Vec<(Direction, u8)> {
         let out = vec![
             (Direction::Up, self.id),
             (Direction::Down, self.id),
@@ -18,13 +18,13 @@ impl SmallBattleSnake {
         ];
         out
     }
-    pub fn new(id: u8, health: u8, body: &Vec<Coordinate>) -> SmallBattleSnake{
+    pub fn new(id: u8, health: u8, body: &Vec<Coordinate>) -> SmallBattleSnake {
         SmallBattleSnake {
             id,
             health,
-            body : body.clone(),
+            body: body.clone(),
             head: body[0],
-            length : body.len() as u16,
+            length: body.len() as u16,
         }
     }
     pub fn make_move(&mut self, move_to_make: Direction) -> Coordinate {
@@ -39,16 +39,13 @@ impl SmallBattleSnake {
         self.body.insert(0, self.head);
         // println!("{}", snake.body.len());
         match self.body.pop() {
-            Some(x) => {
-                x
-            }
+            Some(x) => x,
             None => panic!("snakes were at length zero. This shouldn't happen."),
         }
     }
-    
 }
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
-pub struct SmallMove{
+pub struct SmallMove {
     pub turn: u32,
     pub board: SmallBoard,
     pub you: SmallBattleSnake,
@@ -58,7 +55,7 @@ impl SmallMove {
         SmallMove {
             turn: 0,
             board: SmallBoard::new(),
-            you: SmallBattleSnake::new(0, 0, &vec![Coordinate::new(0,0)]),
+            you: SmallBattleSnake::new(0, 0, &vec![Coordinate::new(0, 0)]),
         }
     }
 }

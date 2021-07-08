@@ -1,5 +1,5 @@
-use crate::types::*;
 use crate::small::SmallMove;
+use crate::types::*;
 // gets the best move given a board state.
 
 // higher is better
@@ -14,7 +14,8 @@ pub fn eval(board: &SmallMove, dead: &Vec<u8>) -> i32 {
         }
     }
     (board.you.length * 15) as i32
-        - ((board.board.snakes.len() - dead.len()) * 5) as i32 - closest_pos.1 * 30
+        - ((board.board.snakes.len() - dead.len()) * 5) as i32
+        - closest_pos.1 * 30
 }
 
 /// returns the manhattan distance between the 2 points.

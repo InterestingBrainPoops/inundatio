@@ -1,12 +1,12 @@
 use crate::cartprod;
 use crate::small::SmallBattleSnake;
+use crate::small::SmallMove;
 use serde::Deserialize;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
 use std::time::Duration;
 use std::time::Instant;
-use crate::small::SmallMove;
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
     pub game: SentGame,
@@ -16,11 +16,13 @@ pub struct Move {
 }
 impl Move {
     pub fn into_small(&self) -> SmallMove {
-        let mut count= 1;
+        let mut count = 1;
         let mut out = SmallMove::new();
         out.turn = self.turn;
         for x in &self.board.snakes {
-            out.board.snakes.push(SmallBattleSnake::new(count, x.health, &x.body));
+            out.board
+                .snakes
+                .push(SmallBattleSnake::new(count, x.health, &x.body));
             if x.id == self.you.id {
                 out.you = out.board.snakes.last().unwrap().clone();
             }
@@ -66,7 +68,6 @@ pub struct Battlesnake {
     pub shout: String,
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Delta {
     pub died: Vec<u8>, // the ids of the snakes that died during this turn
@@ -75,13 +76,13 @@ pub struct Delta {
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct State {
-    pub state: SmallMove,       // current state
-    pub dead: Vec<u8>, // ids
+    pub state: SmallMove, // current state
+    pub dead: Vec<u8>,    // ids
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
     // at least i think
-    fn make_move<>(&mut self, moves: &Vec<(Direction, u8)>) -> Delta {
+    fn make_move(&mut self, moves: &Vec<(Direction, u8)>) -> Delta {
         let mut out = Delta {
             died: vec![],
             tails: vec![],
@@ -94,7 +95,7 @@ impl State {
                 for snakes_move in moves {
                     // this entire block here just moves the snakes in the direction they chose
                     if snake.id == snakes_move.1 {
-                        out.tails.push((snake.id , snake.make_move(snakes_move.0)));
+                        out.tails.push((snake.id, snake.make_move(snakes_move.0)));
                         // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
                         match self.state.board.food.iter().position(|&r| r == snake.head) {
                             Some(index) => {
@@ -181,7 +182,6 @@ impl State {
             }
             // remove all heads and tails.
             for tail in &delta.tails {
-                
                 if tail.0 == snake.id {
                     snake.body.push(tail.1);
                     snake.health += 1;
@@ -206,21 +206,21 @@ impl State {
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
         count: &mut Duration,
     ) -> (i32, i32, i32) {
+        if self.dead.contains(&self.state.you.id) {
+            println!("{:?}, {}", self.dead, depth);
+            // im dead
+            return (i32::MIN, alpha, beta);
+        } else if self.state.board.snakes.len() - self.dead.len() == 1 {
+            // ive won
+            println!("{:?}, {}", self.dead, self.state.you.id);
+            return (i32::MAX, alpha, beta);
+        }
         if depth == 0
-            || self.dead.contains(&self.state.you.id)
-            || self.state.board.snakes.len() - self.dead.len() == 1
         {
-            
-            if self.dead.contains(&self.state.you.id) { // im dead
-                return (i32::MIN, alpha, beta);
-            } else if self.state.board.snakes.len() - self.dead.len() == 1 { // ive won
-                return (i32::MAX, alpha, beta);
-            }
             let start = Instant::now();
             let x = (static_eval(&self.state, &self.dead), alpha, beta);
             *count += start.elapsed();
             return x;
-            
         }
         if maximizing {
             let mut value = i32::MIN;
@@ -246,10 +246,7 @@ impl State {
             let mut value = i32::MAX;
             for current_move in &self.get_moves() {
                 let start = Instant::now();
-                let delta;
-                {
-                    delta = self.make_move(current_move);
-                }
+                let delta = self.make_move(current_move);
                 *count += start.elapsed();
                 value = i32::min(
                     value,
@@ -268,7 +265,7 @@ impl State {
         }
     }
     /// It will return a 2D array of moves for the opposing team.
-    fn get_moves (&self) -> Vec<Vec<(Direction, u8)>> {
+    fn get_moves(&self) -> Vec<Vec<(Direction, u8)>> {
         let mut out: Vec<Vec<(Direction, u8)>> = vec![];
         for x in (&self.state.board.snakes)
             .into_iter()
@@ -293,13 +290,13 @@ impl State {
         ];
         let mut alpha = i32::MIN;
         let mut beta = i32::MAX;
-        let mut count = Duration::new(0,0);
+        let mut count = Duration::new(0, 0);
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
             let delta = self.make_move(s);
-            
-            let a = self.minimax( 13, alpha, beta, false, static_eval, &mut count);
-            println!("move: {}, score: {}",x.1, a.0);
+
+            let a = self.minimax(2, alpha, beta, false, static_eval, &mut count);
+            println!("move: {}, score: {}", x.1, a.0);
             self.unmake_move(&delta);
             x.2 = a.0;
 
@@ -319,7 +316,7 @@ impl State {
 }
 
 impl Battlesnake {
-    pub fn get_moves(& self) -> Vec<(Direction, & String)> {
+    pub fn get_moves(&self) -> Vec<(Direction, &String)> {
         let out = vec![
             (Direction::Up, &self.id),
             (Direction::Down, &self.id),
@@ -349,7 +346,6 @@ pub struct Coordinate {
     pub x: i8,
     pub y: i8,
 }
-
 
 impl ops::AddAssign<Coordinate> for Coordinate {
     fn add_assign(&mut self, rhs: Coordinate) {
