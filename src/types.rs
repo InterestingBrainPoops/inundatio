@@ -94,23 +94,7 @@ impl State {
                 for snakes_move in moves {
                     // this entire block here just moves the snakes in the direction they chose
                     if snake.id == snakes_move.1 {
-                        // basically if it matches the id.
-                        snake.health -= 1; // decrement the health
-                        let add = match snakes_move.0 {
-                            Direction::Up => Coordinate::new(0, 1),
-                            Direction::Down => Coordinate::new(0, -1),
-                            Direction::Left => Coordinate::new(-1, 0),
-                            Direction::Right => Coordinate::new(1, 0),
-                        };
-                        snake.head += add;
-                        snake.body.insert(0, snake.head);
-                        // println!("{}", snake.body.len());
-                        match snake.body.pop() {
-                            Some(x) => {
-                                out.tails.push((snake.id, x));
-                            }
-                            None => panic!("snakes were at length zero. This shouldn't happen."),
-                        }
+                        out.tails.push((snake.id , snake.make_move(snakes_move.0)));
                         // checks if the head is on any food, and if it is, then it removes the food, and gives the snake max health.
                         match self.state.board.food.iter().position(|&r| r == snake.head) {
                             Some(index) => {
@@ -195,6 +179,7 @@ impl State {
                     snake.length -= 1;
                 }
             }
+            // remove all heads and tails.
             for tail in &delta.tails {
                 
                 if tail.0 == snake.id {
@@ -299,6 +284,7 @@ impl State {
         &mut self,
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
     ) -> (Direction, &str, i32) {
+        println!("{:?}", self.state);
         let mut out = vec![
             (Direction::Up, "up", 0),
             (Direction::Down, "down", 0),
