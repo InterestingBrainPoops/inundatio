@@ -215,27 +215,26 @@ impl State {
             println!("{:?}, {}", self.dead, self.state.you.id);
             return (i32::MAX, alpha, beta);
         }
-        if depth == 0
-        {
-            let start = Instant::now();
+        if depth == 0 {
+            // let start = Instant::now();
             let x = (static_eval(&self.state, &self.dead), alpha, beta);
-            *count += start.elapsed();
+            // *count += start.elapsed();
             return x;
         }
         if maximizing {
             let mut value = i32::MIN;
             for current_move in self.state.you.get_moves().clone() {
-                let start = Instant::now();
+                // let start = Instant::now();
                 let delta = self.make_move(&vec![(current_move).clone()]);
-                *count += start.elapsed();
+                // *count += start.elapsed();
                 value = i32::max(
                     value,
                     self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
-                let start = Instant::now();
+                // let start = Instant::now();
                 self.unmake_move(&delta);
-                *count += start.elapsed();
+                // *count += start.elapsed();
                 if value >= beta {
                     break; // beta cutoff
                 }
@@ -245,17 +244,17 @@ impl State {
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves() {
-                let start = Instant::now();
+                // let start = Instant::now();
                 let delta = self.make_move(current_move);
-                *count += start.elapsed();
+                // *count += start.elapsed();
                 value = i32::min(
                     value,
                     self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
                         .0,
                 );
-                let start = Instant::now();
+                // let start = Instant::now();
                 self.unmake_move(&delta);
-                *count += start.elapsed();
+                // *count += start.elapsed();
                 if value <= alpha {
                     break;
                 }
