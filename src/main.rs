@@ -9,6 +9,7 @@ mod types;
 
 use dotenv::dotenv;
 use serde_json::json;
+use core::time;
 use std::time::Instant;
 use types::*;
 use warp::http::StatusCode;
@@ -39,6 +40,12 @@ async fn main() {
             println!("GOT MOVE");
             let mut state = State{state:sent_move.into_small(), dead: vec![]};
             let out_move;
+            // let t0 = Instant::now();
+            // let x = 1;
+            // let perft =  state.perft(x, (Direction::Down, 1), true);
+            // let time_taken = t0.elapsed();
+            // println!("nps = {}, time taken for depth {}: {:?}, nodes found: {}", perft as f64/(time_taken.as_secs_f64()),x,time_taken, perft);
+            
             out_move = state.get_best(&engine::eval);
             println!("Turn: {}, ToMove: {:?}, Score: {}",sent_move.turn , out_move.0, out_move.2);
             println!("took me {:?}",  start.elapsed());

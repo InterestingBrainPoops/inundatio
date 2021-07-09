@@ -2,6 +2,7 @@ use crate::cartprod;
 use crate::small::SmallBattleSnake;
 use crate::small::SmallMove;
 use serde::Deserialize;
+use std::cmp::max;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
@@ -326,6 +327,35 @@ impl State {
         }
         *biggest
     }
+    pub fn perft (&mut self, depth : u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
+        let mut nodes = 0;
+        if self.dead.contains(&self.state.you.id) {
+            println!("e");
+            return 1;
+        } else if self.state.board.snakes.len() - self.dead.len() == 1 {
+            println!("e");
+
+            return 1;
+        }
+        if depth == 0 {
+            
+            
+            return 1;
+        }
+        
+        if maximizing {
+            for m in self.state.you.get_moves() {
+                nodes += self.perft(depth, m, !maximizing);
+            }
+        }else {
+            for moves in &self.get_moves(you_move) {
+                let delta = self.make_move(moves);
+                nodes += self.perft( depth - 1 , you_move, !maximizing);
+                self.unmake_move(&delta);
+            }
+        }
+        return nodes
+    }
     pub fn _test_position(
         &mut self,
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
@@ -354,7 +384,7 @@ impl State {
                 alpha = a.1;
                 beta = a.2;
             }
-            println!("Total eval time: {:?}, at depth {}", t0.elapsed(), y);
+            // println!("Total eval time: {:?}, at depth {}", t0.elapsed(), y);
             // assert_eq!(e, *self);
             let mut biggest = &out[0];
             for x in &out[1..] {
@@ -362,7 +392,7 @@ impl State {
                     biggest = x;
                 }
             }
-            println!("{:?}", biggest);
+            // println!("{:?}", biggest);
         }
         let mut out = vec![
             (Direction::Up, "up", 0),
@@ -377,7 +407,7 @@ impl State {
 
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
-            let a = self.minimax(6, alpha, beta, false, static_eval, &mut count, s[0]);
+            let a = self.minimax(13, alpha, beta, false, static_eval, &mut count, s[0]);
             println!("move: {}, score: {}", x.1, a.0);
             x.2 = a.0;
 
