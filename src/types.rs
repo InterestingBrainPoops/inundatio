@@ -306,7 +306,6 @@ impl State {
         ];
         let mut alpha = i32::MIN;
         let mut beta = i32::MAX;
-        let e = self.clone();
         let mut count = Duration::new(0, 0);
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
@@ -332,7 +331,7 @@ impl State {
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
     ) -> (Direction, &str, i32) {
         println!("{:?}", self.state);
-        for y in (1..13) {
+        for y in 1..13 {
             let mut out = vec![
                 (Direction::Up, "up", 0),
                 (Direction::Down, "down", 0),
@@ -378,7 +377,7 @@ impl State {
 
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
-            let a = self.minimax(2, alpha, beta, false, static_eval, &mut count, s[0]);
+            let a = self.minimax(6, alpha, beta, false, static_eval, &mut count, s[0]);
             println!("move: {}, score: {}", x.1, a.0);
             x.2 = a.0;
 
@@ -397,17 +396,6 @@ impl State {
     }
 }
 
-impl Battlesnake {
-    pub fn get_moves(&self) -> Vec<(Direction, &String)> {
-        let out = vec![
-            (Direction::Up, &self.id),
-            (Direction::Down, &self.id),
-            (Direction::Left, &self.id),
-            (Direction::Right, &self.id),
-        ];
-        out
-    }
-}
 impl FromStr for Direction {
     type Err = ParseIntError;
 
