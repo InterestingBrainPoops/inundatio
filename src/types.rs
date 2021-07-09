@@ -205,7 +205,7 @@ impl State {
         maximizing: bool,
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
         count: &mut Duration,
-        you_move : (Direction, u8)
+        you_move: (Direction, u8),
     ) -> (i32, i32, i32) {
         if self.dead.contains(&self.state.you.id) {
             // println!("{:?}, {}", self.dead, depth);
@@ -230,8 +230,16 @@ impl State {
                 // *count += start.elapsed();
                 value = i32::max(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count, current_move)
-                        .0,
+                    self.minimax(
+                        depth - 1,
+                        alpha,
+                        beta,
+                        !maximizing,
+                        static_eval,
+                        count,
+                        current_move,
+                    )
+                    .0,
                 );
                 // let start = Instant::now();
                 // self.unmake_move(&delta);
@@ -250,8 +258,16 @@ impl State {
                 // *count += start.elapsed();
                 value = i32::min(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count, you_move)
-                        .0,
+                    self.minimax(
+                        depth - 1,
+                        alpha,
+                        beta,
+                        !maximizing,
+                        static_eval,
+                        count,
+                        you_move,
+                    )
+                    .0,
                 );
                 // let start = Instant::now();
                 self.unmake_move(&delta);
@@ -265,7 +281,7 @@ impl State {
         }
     }
     /// It will return a 2D array of moves for the opposing team.
-    fn get_moves(&self, you_move : (Direction, u8)) -> Vec<Vec<(Direction, u8)>> {
+    fn get_moves(&self, you_move: (Direction, u8)) -> Vec<Vec<(Direction, u8)>> {
         let mut out = vec![vec![you_move]];
         for x in (&self.state.board.snakes)
             .into_iter()
@@ -302,6 +318,74 @@ impl State {
             beta = a.2;
         }
         println!("Total eval time: {:?}", count);
+        // assert_eq!(e, *self);
+        let mut biggest = &out[0];
+        for x in &out[1..] {
+            if biggest.2 < x.2 {
+                biggest = x;
+            }
+        }
+        *biggest
+    }
+    pub fn _test_position(
+        &mut self,
+        static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
+    ) -> (Direction, &str, i32) {
+        println!("{:?}", self.state);
+        for y in (1..13) {
+            let mut out = vec![
+                (Direction::Up, "up", 0),
+                (Direction::Down, "down", 0),
+                (Direction::Left, "left", 0),
+                (Direction::Right, "right", 0),
+            ];
+            let mut alpha = i32::MIN;
+            let mut beta = i32::MAX;
+            // let e = self.clone();
+            let mut count = Duration::new(0, 0);
+            let t0 = Instant::now();
+
+            for x in &mut out {
+                let s = &vec![(x.0, self.state.you.id)];
+                // depth needs to be odd and > 0.
+                let a = self.minimax(y, alpha, beta, false, static_eval, &mut count, s[0]);
+                println!("move: {}, score: {}", x.1, a.0);
+                x.2 = a.0;
+
+                alpha = a.1;
+                beta = a.2;
+            }
+            println!("Total eval time: {:?}, at depth {}", t0.elapsed(), y);
+            // assert_eq!(e, *self);
+            let mut biggest = &out[0];
+            for x in &out[1..] {
+                if biggest.2 < x.2 {
+                    biggest = x;
+                }
+            }
+            println!("{:?}", biggest);
+        }
+        let mut out = vec![
+            (Direction::Up, "up", 0),
+            (Direction::Down, "down", 0),
+            (Direction::Left, "left", 0),
+            (Direction::Right, "right", 0),
+        ];
+        let mut alpha = i32::MIN;
+        let mut beta = i32::MAX;
+        // let e = self.clone();
+        let mut count = Duration::new(0, 0);
+
+        for x in &mut out {
+            let s = &vec![(x.0, self.state.you.id)];
+            let a = self.minimax(2, alpha, beta, false, static_eval, &mut count, s[0]);
+            println!("move: {}, score: {}", x.1, a.0);
+            x.2 = a.0;
+
+            alpha = a.1;
+            beta = a.2;
+        }
+        // println!("Total eval time: {:?}", count);
         // assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
