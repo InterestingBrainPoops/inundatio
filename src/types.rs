@@ -124,7 +124,7 @@ impl State {
         //   head to body collision
         //   head to head collision
         for snake in &self.state.board.snakes {
-            if !self.dead.contains(&snake.id) {
+            if !self.dead.contains(&snake.id) && moves.iter().any(|x| x.1 == snake.id) {
                 if snake.health <= 0 {
                     // out of health
 
@@ -207,12 +207,12 @@ impl State {
         count: &mut Duration,
     ) -> (i32, i32, i32) {
         if self.dead.contains(&self.state.you.id) {
-            println!("{:?}, {}", self.dead, depth);
+            // println!("{:?}, {}", self.dead, depth);
             // im dead
             return (i32::MIN, alpha, beta);
         } else if self.state.board.snakes.len() - self.dead.len() == 1 {
             // ive won
-            println!("{:?}, {}", self.dead, self.state.you.id);
+            // println!("{:?}, {}", self.dead, self.state.you.id);
             return (i32::MAX, alpha, beta);
         }
         if depth == 0 {
@@ -268,7 +268,7 @@ impl State {
         let mut out: Vec<Vec<(Direction, u8)>> = vec![];
         for x in (&self.state.board.snakes)
             .into_iter()
-            .filter(|x| x.id != self.state.you.id)
+            .filter(|x| x.id != self.state.you.id && !self.dead.contains(&x.id))
         {
             out.push(x.get_moves());
         }
@@ -289,12 +289,13 @@ impl State {
         ];
         let mut alpha = i32::MIN;
         let mut beta = i32::MAX;
+        let e = self.clone();
         let mut count = Duration::new(0, 0);
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
             let delta = self.make_move(s);
 
-            let a = self.minimax(2, alpha, beta, false, static_eval, &mut count);
+            let a = self.minimax(5, alpha, beta, false, static_eval, &mut count);
             println!("move: {}, score: {}", x.1, a.0);
             self.unmake_move(&delta);
             x.2 = a.0;
@@ -303,7 +304,7 @@ impl State {
             beta = a.2;
         }
         println!("Total eval time: {:?}", count);
-        // assert_eq!(e, *self);
+        assert_eq!(e, *self);
         let mut biggest = &out[0];
         for x in &out[1..] {
             if biggest.2 < x.2 {
