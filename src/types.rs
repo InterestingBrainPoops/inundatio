@@ -205,6 +205,7 @@ impl State {
         maximizing: bool,
         static_eval: &dyn Fn(&SmallMove, &Vec<u8>) -> i32,
         count: &mut Duration,
+        you_move : (Direction, u8)
     ) -> (i32, i32, i32) {
         if self.dead.contains(&self.state.you.id) {
             // println!("{:?}, {}", self.dead, depth);
@@ -225,15 +226,15 @@ impl State {
             let mut value = i32::MIN;
             for current_move in self.state.you.get_moves().clone() {
                 // let start = Instant::now();
-                let delta = self.make_move(&vec![(current_move).clone()]);
+                // let delta = self.make_move(&vec![(current_move).clone()]);
                 // *count += start.elapsed();
                 value = i32::max(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count, current_move)
                         .0,
                 );
                 // let start = Instant::now();
-                self.unmake_move(&delta);
+                // self.unmake_move(&delta);
                 // *count += start.elapsed();
                 if value >= beta {
                     break; // beta cutoff
@@ -243,13 +244,13 @@ impl State {
             return (value, alpha, beta);
         } else {
             let mut value = i32::MAX;
-            for current_move in &self.get_moves() {
+            for current_move in &self.get_moves(you_move) {
                 // let start = Instant::now();
                 let delta = self.make_move(current_move);
                 // *count += start.elapsed();
                 value = i32::min(
                     value,
-                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count)
+                    self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, count, you_move)
                         .0,
                 );
                 // let start = Instant::now();
@@ -264,8 +265,8 @@ impl State {
         }
     }
     /// It will return a 2D array of moves for the opposing team.
-    fn get_moves(&self) -> Vec<Vec<(Direction, u8)>> {
-        let mut out: Vec<Vec<(Direction, u8)>> = vec![];
+    fn get_moves(&self, you_move : (Direction, u8)) -> Vec<Vec<(Direction, u8)>> {
+        let mut out = vec![vec![you_move]];
         for x in (&self.state.board.snakes)
             .into_iter()
             .filter(|x| x.id != self.state.you.id && !self.dead.contains(&x.id))
@@ -293,11 +294,8 @@ impl State {
         let mut count = Duration::new(0, 0);
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
-            let delta = self.make_move(s);
-
-            let a = self.minimax(5, alpha, beta, false, static_eval, &mut count);
+            let a = self.minimax(5, alpha, beta, false, static_eval, &mut count, s[0]);
             println!("move: {}, score: {}", x.1, a.0);
-            self.unmake_move(&delta);
             x.2 = a.0;
 
             alpha = a.1;

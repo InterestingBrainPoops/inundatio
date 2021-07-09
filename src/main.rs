@@ -7,8 +7,6 @@ mod types;
 // use small::{SmallBoard, SmallMove};
 // use types::Coordinate;
 
-
-
 use dotenv::dotenv;
 use serde_json::json;
 use std::time::Instant;
@@ -57,6 +55,7 @@ async fn main() {
     println!("Listening on port {}", port);
     warp::serve(routes).run(([0, 0, 0, 0], port)).await;
 }
+// test thing, ignore.
 // fn main() {
 //     let mut x = State {
 //         state: SmallMove {
