@@ -43,9 +43,9 @@ async fn main() {
             let mut state = State{state:sent_move.into_small()};
             println!("{:?}", state);
             let out_move;
-            println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
-            println!("{}", pstate.perft(1, (Direction::Up, 5), true));
-            out_move = state.get_best(&engine::eval, 9);
+            // println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
+            // println!("{}", pstate.perft(1, (Direction::Up, 5), true));
+            out_move = state.get_best(&engine::eval, 13);
 
             Ok(warp::reply::json(&json!({
                 "move": out_move.0.as_str(),
