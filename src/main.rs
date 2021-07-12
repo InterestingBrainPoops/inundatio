@@ -39,13 +39,13 @@ async fn main() {
         .and(warp::body::json())
         .and_then(|sent_move: Move| async move {
             println!("GOT MOVE");
-            let mut pstate = State{state:sent_move.into_small()};
+            let t0 = Instant::now();
             let mut state = State{state:sent_move.into_small()};
             println!("{:?}", state);
             let out_move;
             // println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
             // println!("{}", pstate.perft(1, (Direction::Up, 5), true));
-            out_move = state.get_best(&engine::eval, 5);
+            out_move = state.get_best(&engine::eval,&t0);
 
             Ok(warp::reply::json(&json!({
                 "move": out_move.0.as_str(),
