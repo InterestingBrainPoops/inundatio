@@ -7,6 +7,12 @@ pub struct SmallBattleSnake {
     pub body: Vec<Coordinate>,
     pub head: Coordinate,
     pub length: u16,
+    pub status: Status,
+}
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
+pub enum Status {
+    Alive,
+    Dead,
 }
 impl SmallBattleSnake {
     pub fn get_moves(&self) -> Vec<(Direction, u8)> {
@@ -25,6 +31,7 @@ impl SmallBattleSnake {
             body: body.clone(),
             head: body[0],
             length: body.len() as u16,
+            status: Status::Alive,
         }
     }
     pub fn make_move(&mut self, move_to_make: Direction) -> Coordinate {
@@ -42,6 +49,24 @@ impl SmallBattleSnake {
             Some(x) => x,
             None => panic!("snakes were at length zero. This shouldn't happen."),
         }
+    }
+    pub fn collision_with(&self, other: &SmallBattleSnake) -> bool {
+        if other.body[1..].contains(&self.head) {
+            return true;
+        }
+        return false;
+    }
+    pub fn lost_head_to_head(&self, other: &SmallBattleSnake) -> bool {
+        if self.head == other.head && self.length < other.length {
+            return true;
+        }
+        return false;
+    }
+    pub fn is_out_of_bounds(&self, width: i8, height: i8) -> bool {
+        return self.head.x < 0
+            || self.head.y < 0
+            || self.head.x > width - 1
+            || self.head.y > height - 1;
     }
 }
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]

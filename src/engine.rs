@@ -1,11 +1,11 @@
-use crate::small::SmallMove;
+use crate::small::{SmallMove, Status};
 use crate::types::*;
 // gets the best move given a board state.
 
 // higher is better
 /// Static eval of the board state.
 /// returns (reachable food) + (reachable squares) - (distance to target)
-pub fn eval(board: &SmallMove, dead: &Vec<u8>) -> i32 {
+pub fn eval(board: &SmallMove) -> i32 {
     let mut closest_pos = (&Coordinate::new(100, 100), 100);
     for food in &board.board.food {
         if closest_pos.1 > manhattan(food, &board.you.head) {
@@ -17,10 +17,19 @@ pub fn eval(board: &SmallMove, dead: &Vec<u8>) -> i32 {
         closest_pos.1 = 0;
     }
     (board.you.length * 1500) as i32
-        - ((board.board.snakes.len() - dead.len()) * 5) as i32
+        - ((board.board.snakes.len() - amnt_dead(board)) * 5) as i32
         - closest_pos.1 * 30
 }
 
+fn amnt_dead(board: &SmallMove) -> usize {
+    let mut out = 0;
+    for snake in &board.board.snakes {
+        if snake.status == Status::Dead {
+            out += 1;
+        }
+    }
+    out
+}
 /// returns the manhattan distance between the 2 points.
 fn manhattan(pos1: &Coordinate, pos2: &Coordinate) -> i32 {
     ((pos1.x - pos2.x).abs() + (pos1.y - pos2.y).abs()) as i32
