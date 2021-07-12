@@ -372,7 +372,7 @@ impl State {
             }
         }
         println!("Total eval time: {:?}", count);
-        if e != *self {
+        if e.state.board.snakes != *self.state.board.snakes {
             println!("{:#?}", e);
             println!("{:#?}", self);
         }
