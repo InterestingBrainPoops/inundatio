@@ -15,13 +15,33 @@ pub enum Status {
     Dead,
 }
 impl SmallBattleSnake {
-    pub fn get_moves(&self) -> Vec<(Direction, u8)> {
-        let out = vec![
+    pub fn get_moves(&self, board: &SmallBoard) -> Vec<(Direction, u8)> {
+        let moves = vec![
             (Direction::Up, self.id),
             (Direction::Down, self.id),
             (Direction::Left, self.id),
             (Direction::Right, self.id),
         ];
+        let mut out = vec![];
+        for smove in &moves {
+            let add = match smove.0 {
+                Direction::Up => Coordinate::new(0, 1),
+                Direction::Down => Coordinate::new(0, -1),
+                Direction::Left => Coordinate::new(-1, 0),
+                Direction::Right => Coordinate::new(1, 0),
+            };
+            let head = add + self.head;
+            if !(board.snakes.iter().any(|x| {
+                (x.body[..(x.body.len() - 1)].contains(&head) && x.id != self.id)
+                    || (x.body[1..(x.body.len() - 1)].contains(&head) && x.id == self.id)
+            }) || head.x < 0
+                || head.y < 0
+                || head.y > board.height - 1
+                || head.x > board.width - 1)
+            {
+                out.push((smove.0, self.id));
+            }
+        }
         out
     }
     pub fn new(id: u8, health: u8, body: &Vec<Coordinate>) -> SmallBattleSnake {

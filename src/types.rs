@@ -3,12 +3,11 @@ use crate::small::SmallBattleSnake;
 use crate::small::SmallMove;
 use crate::small::Status;
 use serde::Deserialize;
-use std::cmp::max;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
 use std::time::Duration;
-use std::time::Instant;
+
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
     pub game: SentGame,
@@ -119,6 +118,7 @@ impl State {
                 for food in &self.state.board.food {
                     if snake.head == *food {
                         out.push((snake.id, snake.health, *food));
+
                         snake.health = 100;
                         snake.length += 1;
                         snake
@@ -214,7 +214,9 @@ impl State {
         for snake in &mut self.state.board.snakes {
             for food in &delta.eaten_food {
                 if food.0 == snake.id {
-                    self.state.board.food.push(food.2);
+                    if !self.state.board.food.contains(&food.2) {
+                        self.state.board.food.push(food.2);
+                    }
                     snake.health = food.1;
                     snake.body.pop();
                     snake.length -= 1;
@@ -255,25 +257,25 @@ impl State {
         static_eval: &dyn Fn(&SmallMove) -> i32,
         count: &mut Duration,
         you_move: (Direction, u8),
-    ) -> (i32, i32, i32) {
+    ) -> i32 {
         if self.state.you.status == Status::Dead {
             // println!("{:?}, {}", self.dead, depth);
             // im dead
-            return (i32::MIN, alpha, beta);
+            return i32::MIN;
         } else if self.state.board.snakes.len() - self.amnt_dead() == 1 {
             // ive won
             // println!("{:?}, {}", self.dead, self.state.you.id);
-            return (i32::MAX, alpha, beta);
+            return i32::MAX;
         }
         if depth == 0 {
             // let start = Instant::now();
-            let x = (static_eval(&self.state), alpha, beta);
+            let x = static_eval(&self.state);
             // *count += start.elapsed();
             return x;
         }
         if maximizing {
             let mut value = i32::MIN;
-            for current_move in self.state.you.get_moves().clone() {
+            for current_move in self.state.you.get_moves(&self.state.board).clone() {
                 // let start = Instant::now();
                 // let delta = self.make_move(&vec![(current_move).clone()]);
                 // *count += start.elapsed();
@@ -287,8 +289,7 @@ impl State {
                         static_eval,
                         count,
                         current_move,
-                    )
-                    .0,
+                    ),
                 );
                 // let start = Instant::now();
                 // self.unmake_move(&delta);
@@ -298,11 +299,12 @@ impl State {
                 }
                 alpha = i32::max(alpha, value);
             }
-            return (value, alpha, beta);
+            return value;
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves(you_move) {
                 // let start = Instant::now();
+                let e = self.clone();
                 let delta = self.make_move(current_move);
                 // *count += start.elapsed();
                 value = i32::min(
@@ -315,18 +317,18 @@ impl State {
                         static_eval,
                         count,
                         you_move,
-                    )
-                    .0,
+                    ),
                 );
                 // let start = Instant::now();
                 self.unmake_move(&delta);
+                assert_eq!(e, *self);
                 // *count += start.elapsed();
                 if value <= alpha {
                     break;
                 }
                 beta = i32::min(beta, value);
             }
-            return (value, alpha, beta);
+            return value;
         }
     }
     /// It will return a 2D array of moves for the opposing team.
@@ -336,34 +338,39 @@ impl State {
             .into_iter()
             .filter(|x| x.id != self.state.you.id && x.status == Status::Alive)
         {
-            out.push(x.get_moves());
+            out.push(x.get_moves(&self.state.board));
         }
         let x = cartprod::cartesian_product(out);
 
         x
     }
-    pub fn get_best(&mut self, static_eval: &dyn Fn(&SmallMove) -> i32, depth : u8) -> (Direction, &str, i32) {
+    pub fn get_best(
+        &mut self,
+        static_eval: &dyn Fn(&SmallMove) -> i32,
+        depth: u8,
+    ) -> (Direction, &str, i32) {
         // println!("{:?}", self.state);
+        let e = self.clone();
         let mut out = vec![
             (Direction::Up, "up", 0),
             (Direction::Down, "down", 0),
             (Direction::Left, "left", 0),
             (Direction::Right, "right", 0),
         ];
-        let mut alpha = i32::MIN;
-        let mut beta = i32::MAX;
+        let alpha = i32::MIN;
+        let beta = i32::MAX;
         let mut count = Duration::new(0, 0);
         for x in &mut out {
             let s = &vec![(x.0, self.state.you.id)];
             let a = self.minimax(depth, alpha, beta, false, static_eval, &mut count, s[0]);
-            println!("move: {}, score: {}", x.1, a.0);
-            x.2 = a.0;
-
-            alpha = a.1;
-            beta = a.2;
+            println!("move: {}, score: {}", x.1, a);
+            x.2 = a;
         }
         println!("Total eval time: {:?}", count);
-        // assert_eq!(e, *self);
+        if e != *self {
+            println!("{:#?}", e);
+            println!("{:#?}", self);
+        }
         let mut biggest = &out[0];
         for x in &out[1..] {
             if biggest.2 < x.2 {
@@ -387,7 +394,7 @@ impl State {
         }
 
         if maximizing {
-            for m in self.state.you.get_moves() {
+            for m in self.state.you.get_moves(&self.state.board) {
                 nodes += self.perft(depth, m, !maximizing);
             }
         } else {
@@ -398,74 +405,6 @@ impl State {
             }
         }
         return nodes;
-    }
-    pub fn _test_position(
-        &mut self,
-        static_eval: &dyn Fn(&SmallMove) -> i32,
-    ) -> (Direction, &str, i32) {
-        println!("{:?}", self.state);
-        for y in 1..13 {
-            let mut out = vec![
-                (Direction::Up, "up", 0),
-                (Direction::Down, "down", 0),
-                (Direction::Left, "left", 0),
-                (Direction::Right, "right", 0),
-            ];
-            let mut alpha = i32::MIN;
-            let mut beta = i32::MAX;
-            // let e = self.clone();
-            let mut count = Duration::new(0, 0);
-            // let t0 = Instant::now();
-
-            for x in &mut out {
-                let s = &vec![(x.0, self.state.you.id)];
-                // depth needs to be odd and > 0.
-                let a = self.minimax(y, alpha, beta, false, static_eval, &mut count, s[0]);
-                println!("move: {}, score: {}", x.1, a.0);
-                x.2 = a.0;
-
-                alpha = a.1;
-                beta = a.2;
-            }
-            // println!("Total eval time: {:?}, at depth {}", t0.elapsed(), y);
-            // assert_eq!(e, *self);
-            let mut biggest = &out[0];
-            for x in &out[1..] {
-                if biggest.2 < x.2 {
-                    biggest = x;
-                }
-            }
-            // println!("{:?}", biggest);
-        }
-        let mut out = vec![
-            (Direction::Up, "up", 0),
-            (Direction::Down, "down", 0),
-            (Direction::Left, "left", 0),
-            (Direction::Right, "right", 0),
-        ];
-        let mut alpha = i32::MIN;
-        let mut beta = i32::MAX;
-        // let e = self.clone();
-        let mut count = Duration::new(0, 0);
-
-        for x in &mut out {
-            let s = &vec![(x.0, self.state.you.id)];
-            let a = self.minimax(13, alpha, beta, false, static_eval, &mut count, s[0]);
-            println!("move: {}, score: {}", x.1, a.0);
-            x.2 = a.0;
-
-            alpha = a.1;
-            beta = a.2;
-        }
-        // println!("Total eval time: {:?}", count);
-        // assert_eq!(e, *self);
-        let mut biggest = &out[0];
-        for x in &out[1..] {
-            if biggest.2 < x.2 {
-                biggest = x;
-            }
-        }
-        *biggest
     }
 }
 
