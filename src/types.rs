@@ -321,7 +321,7 @@ impl State {
                 );
                 // let start = Instant::now();
                 self.unmake_move(&delta);
-                assert_eq!(e, *self);
+                assert_eq!(e.state.board.snakes, *self.state.board.snakes);
                 // *count += start.elapsed();
                 if value <= alpha {
                     break;
