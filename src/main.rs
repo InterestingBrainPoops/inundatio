@@ -48,7 +48,7 @@ async fn main() {
             out_move = state.get_best(&engine::eval, 9);
 
             Ok(warp::reply::json(&json!({
-                "move": out_move.1,
+                "move": out_move.0.as_str(),
                 "shout": "We've been trying to reach you concerning your vehicle's extended warranty."
             }))) as Result<_, Rejection>
         });

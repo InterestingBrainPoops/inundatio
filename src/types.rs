@@ -348,36 +348,35 @@ impl State {
         &mut self,
         static_eval: &dyn Fn(&SmallMove) -> i32,
         depth: u8,
-    ) -> (Direction, &str, i32) {
+    ) -> (Direction, i32) {
         // println!("{:?}", self.state);
         let e = self.clone();
-        let mut out = vec![
-            (Direction::Up, "up", 0),
-            (Direction::Down, "down", 0),
-            (Direction::Left, "left", 0),
-            (Direction::Right, "right", 0),
-        ];
+        let moves = self.state.you.get_moves(&self.state.board);
+        let mut biggest = i32::MIN;
+        let mut out = (moves[0].0, i32::MAX);
+        if moves.len() == 1 {
+            return out;
+        }else if moves.len() == 0 {
+            return (Direction::Up, i32::MIN);
+        }
         let alpha = i32::MIN;
         let beta = i32::MAX;
         let mut count = Duration::new(0, 0);
-        for x in &mut out {
+        for x in &moves {
             let s = &vec![(x.0, self.state.you.id)];
             let a = self.minimax(depth, alpha, beta, false, static_eval, &mut count, s[0]);
             println!("move: {}, score: {}", x.1, a);
-            x.2 = a;
+            if a > biggest {
+                out = (x.0,a);
+                biggest = a;
+            }
         }
         println!("Total eval time: {:?}", count);
         if e != *self {
             println!("{:#?}", e);
             println!("{:#?}", self);
         }
-        let mut biggest = &out[0];
-        for x in &out[1..] {
-            if biggest.2 < x.2 {
-                biggest = x;
-            }
-        }
-        *biggest
+        (out.0, biggest)
     }
     pub fn perft(&mut self, depth: u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
         let mut nodes = 0;
@@ -405,6 +404,17 @@ impl State {
             }
         }
         return nodes;
+    }
+}
+
+impl Direction {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Direction::Up => "up",
+            Direction::Down => "down",
+            Direction::Left => "left",
+            Direction::Right => "right",
+        }
     }
 }
 
