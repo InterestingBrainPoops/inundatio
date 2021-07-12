@@ -77,7 +77,7 @@ impl SmallBattleSnake {
         return false;
     }
     pub fn lost_head_to_head(&self, other: &SmallBattleSnake) -> bool {
-        if self.head == other.head && self.length < other.length {
+        if self.head == other.head && self.length <= other.length {
             return true;
         }
         return false;
