@@ -8,6 +8,7 @@ use std::ops;
 use std::str::FromStr;
 use std::time::Duration;
 use std::time::Instant;
+use std::u128;
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
     pub game: SentGame,
@@ -341,23 +342,34 @@ impl State {
         &mut self,
         static_eval: &dyn Fn(&SmallMove) -> i32,
         time: &Instant,
-        you_move: (Direction, u8),
-    ) -> i32 {
+        moves: &Vec<(Direction, u8)>,
+    ) -> (Direction, i32) {
         let mut alpha = i32::MIN;
         let mut beta = i32::MAX;
         let mut depth = 1;
-        let mut out = 0;
-        while time.elapsed().as_millis() < 400 {
-            match self.minimax(depth, alpha, beta, false, static_eval, you_move) {
-                (d, a, b) => {
-                    alpha = a;
-                    beta = b;
-                    out = d;
+        let mut biggest = 0;
+        let mut dir = Direction::Up;
+        let max_depth = 30;
+        for you_move in moves {
+            depth = 1;
+            let mut out = 0;
+            while time.elapsed().as_millis() < 480/(moves.len() as u128) && depth <= max_depth{
+            
+                match self.minimax(depth, alpha, beta, false, static_eval, *you_move) {
+                    (d, a, b) => {
+                        alpha = a;
+                        beta = b;
+                        out = d;
+                    }
                 }
+                depth += 1;
             }
-            depth += 1;
+            if out > biggest {
+                biggest = out;
+                dir = you_move.0;
+            }
         }
-        out
+        (dir, biggest)
     }
 
     pub fn get_best(
@@ -368,30 +380,19 @@ impl State {
         // println!("{:?}", self.state);
         let e = self.clone();
         let moves = self.state.you.get_moves(&self.state.board);
-        let mut biggest = i32::MIN;
         if moves.len() == 0 {
             return (Direction::Up, i32::MIN);
         }
-        let mut out = (moves[0].0, i32::MAX);
+        let out = (moves[0].0, i32::MAX);
         if moves.len() == 1 {
             return out;
         }
-        let count = Duration::new(0, 0);
-        for x in &moves {
-            let s = &vec![(x.0, self.state.you.id)];
-            let a = self.iterative_deepen(static_eval, time, s[0]);
-            println!("move: {}, score: {}", x.1, a);
-            if a > biggest {
-                out = (x.0, a);
-                biggest = a;
-            }
-        }
-        println!("Total eval time: {:?}", count);
+        
         if e.state.board.snakes != *self.state.board.snakes {
             println!("{:#?}", e);
             println!("{:#?}", self);
         }
-        (out.0, biggest)
+        self.iterative_deepen(static_eval, time, &moves)
     }
     pub fn perft(&mut self, depth: u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
         let mut nodes = 0;
