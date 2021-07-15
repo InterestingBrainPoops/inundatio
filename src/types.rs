@@ -274,7 +274,7 @@ impl State {
         }
         if maximizing {
             let mut value = i32::MIN;
-            let out = Direction::Up;
+            let mut out = Direction::Up;
             for current_move in self.state.you.get_moves(&self.state.board).clone() {
                 // let start = Instant::now();
                 // let delta = self.make_move(&vec![(current_move).clone()]);
@@ -290,7 +290,7 @@ impl State {
                 );
                 if value < x.0 {
                     out = x.3;
-                    let value = x.0;
+                    value = x.0;
                 }
                 // let start = Instant::now();
                 // self.unmake_move(&delta);
