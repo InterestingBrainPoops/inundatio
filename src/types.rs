@@ -353,16 +353,17 @@ impl State {
         let mut dir = Direction::Up;
         let max_depth = 30;
 
-        while time.elapsed().as_millis() < 480 && depth <= max_depth {
+        while time.elapsed().as_millis() < 200 && depth <= max_depth {
+            depth += 1;
             match self.minimax(depth, alpha, beta, true, static_eval, (Direction::Up, 40)) {
                 (c, _, _, d) => {
                     confidence = c;
                     dir = d;
                 }
             }
-            depth += 1;
+            
         }
-
+        println!("Depth searched too: {}", depth);
         (dir, confidence)
     }
 
