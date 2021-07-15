@@ -6,7 +6,6 @@ use serde::Deserialize;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
-use std::time::Duration;
 use std::time::Instant;
 use std::u128;
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
@@ -257,40 +256,42 @@ impl State {
         maximizing: bool,
         static_eval: &dyn Fn(&SmallMove) -> i32,
         you_move: (Direction, u8),
-    ) -> (i32, i32, i32) {
+    ) -> (i32, i32, i32, Direction) {
         if self.state.you.status == Status::Dead {
             // println!("{:?}, {}", self.dead, depth);
             // im dead
-            return (i32::MIN, alpha, beta);
+            return (i32::MIN, alpha, beta, Direction::Up);
         } else if self.state.board.snakes.len() - self.amnt_dead() == 1 {
             // ive won
             // println!("{:?}, {}", self.dead, self.state.you.id);
-            return (i32::MAX, alpha, beta);
+            return (i32::MAX, alpha, beta, Direction::Up);
         }
         if depth == 0 {
             // let start = Instant::now();
             let x = static_eval(&self.state);
             // *count += start.elapsed();
-            return (x, alpha, beta);
+            return (x, alpha, beta, Direction::Up);
         }
         if maximizing {
             let mut value = i32::MIN;
+            let out = Direction::Up;
             for current_move in self.state.you.get_moves(&self.state.board).clone() {
                 // let start = Instant::now();
                 // let delta = self.make_move(&vec![(current_move).clone()]);
                 // *count += start.elapsed();
-                value = i32::max(
-                    value,
-                    self.minimax(
-                        depth - 1,
-                        alpha,
-                        beta,
-                        !maximizing,
-                        static_eval,
-                        current_move,
-                    )
-                    .0,
+
+                let x = self.minimax(
+                    depth - 1,
+                    alpha,
+                    beta,
+                    !maximizing,
+                    static_eval,
+                    current_move,
                 );
+                if value < x.0 {
+                    out = x.3;
+                    let value = x.0;
+                }
                 // let start = Instant::now();
                 // self.unmake_move(&delta);
                 // *count += start.elapsed();
@@ -299,7 +300,7 @@ impl State {
                 }
                 alpha = i32::max(alpha, value);
             }
-            return (value, alpha, beta);
+            return (value, alpha, beta, out);
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves(you_move) {
@@ -321,7 +322,7 @@ impl State {
                 }
                 beta = i32::min(beta, value);
             }
-            return (value, alpha, beta);
+            return (value, alpha, beta, Direction::Up);
         }
     }
     /// It will return a 2D array of moves for the opposing team.
@@ -344,32 +345,24 @@ impl State {
         time: &Instant,
         moves: &Vec<(Direction, u8)>,
     ) -> (Direction, i32) {
-        let mut alpha = i32::MIN;
-        let mut beta = i32::MAX;
-        let mut depth = 1;
-        let mut biggest = 0;
+        let alpha = i32::MIN;
+        let beta = i32::MAX;
+        let mut depth = 0;
+        let mut confidence = 0;
         let mut dir = Direction::Up;
         let max_depth = 30;
-        for you_move in moves {
-            depth = 1;
-            let mut out = 0;
-            while time.elapsed().as_millis() < 480/(moves.len() as u128) && depth <= max_depth{
-            
-                match self.minimax(depth, alpha, beta, false, static_eval, *you_move) {
-                    (d, a, b) => {
-                        alpha = a;
-                        beta = b;
-                        out = d;
-                    }
+
+        while time.elapsed().as_millis() < 480 / (moves.len() as u128) && depth <= max_depth {
+            match self.minimax(depth, alpha, beta, true, static_eval, (Direction::Up, 40)) {
+                (c, _, _, d) => {
+                    confidence = c;
+                    dir = d;
                 }
-                depth += 1;
             }
-            if out > biggest {
-                biggest = out;
-                dir = you_move.0;
-            }
+            depth += 1;
         }
-        (dir, biggest)
+
+        (dir, confidence)
     }
 
     pub fn get_best(
@@ -387,7 +380,7 @@ impl State {
         if moves.len() == 1 {
             return out;
         }
-        
+
         if e.state.board.snakes != *self.state.board.snakes {
             println!("{:#?}", e);
             println!("{:#?}", self);
