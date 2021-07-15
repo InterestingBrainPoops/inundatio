@@ -6,6 +6,7 @@ use serde::Deserialize;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
+use std::thread::current;
 use std::time::Instant;
 use std::u128;
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
@@ -289,7 +290,7 @@ impl State {
                     current_move,
                 );
                 if value < x.0 {
-                    out = x.3;
+                    out = current_move.0;
                     value = x.0;
                 }
                 // let start = Instant::now();
