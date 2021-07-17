@@ -1,5 +1,6 @@
 use crate::types::{Coordinate, Direction};
 use serde::Deserialize;
+use tinyvec;
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct SmallBattleSnake {
     pub id: u8,
@@ -15,14 +16,14 @@ pub enum Status {
     Dead,
 }
 impl SmallBattleSnake {
-    pub fn get_moves(&self, board: &SmallBoard) -> Vec<(Direction, u8)> {
+    pub fn get_moves(&self, board: &SmallBoard) -> tinyvec::ArrayVec<[(Direction, u8); 4]> {
         let moves = vec![
             (Direction::Up, self.id),
             (Direction::Down, self.id),
             (Direction::Left, self.id),
             (Direction::Right, self.id),
         ];
-        let mut out = vec![];
+        let mut out = tinyvec::array_vec!([(Direction, u8); 4]);
         for smove in &moves {
             let add = match smove.0 {
                 Direction::Up => Coordinate::new(0, 1),

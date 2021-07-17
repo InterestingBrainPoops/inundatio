@@ -3,12 +3,13 @@ use crate::small::SmallBattleSnake;
 use crate::small::SmallMove;
 use crate::small::Status;
 use serde::Deserialize;
+use tinyvec::ArrayVec;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
-use std::thread::current;
 use std::time::Instant;
 use std::u128;
+
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
     pub game: SentGame,
@@ -83,7 +84,7 @@ pub struct State {
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
     // at least i think
-    pub fn make_move(&mut self, moves: &Vec<(Direction, u8)>) -> Delta {
+    pub fn make_move(&mut self, moves: &ArrayVec<[(Direction, u8);2]>) -> Delta {
         let mut out = Delta {
             died: vec![],
             tails: vec![],
@@ -101,7 +102,7 @@ impl State {
         }
         out
     }
-    fn move_snakes(&mut self, moves: &Vec<(Direction, u8)>) -> Vec<(u8, Coordinate)> {
+    fn move_snakes(&mut self, moves: &ArrayVec<[(Direction, u8);2]>) -> Vec<(u8, Coordinate)> {
         let mut out: Vec<(u8, Coordinate)> = vec![];
         for snake in &mut self.state.board.snakes {
             for snake_move in moves {
@@ -327,8 +328,8 @@ impl State {
         }
     }
     /// It will return a 2D array of moves for the opposing team.
-    fn get_moves(&self, you_move: (Direction, u8)) -> Vec<Vec<(Direction, u8)>> {
-        let mut out = vec![vec![you_move]];
+    fn get_moves(&self, you_move: (Direction, u8)) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
+        let mut out = tinyvec::array_vec!([tinyvec::ArrayVec<[(Direction, u8); 4 ]>;2] => tinyvec::array_vec!([(Direction, u8) ; 4] => you_move));
         for x in (&self.state.board.snakes)
             .into_iter()
             .filter(|x| x.id != self.state.you.id && x.status == Status::Alive)
@@ -344,7 +345,7 @@ impl State {
         &mut self,
         static_eval: &dyn Fn(&SmallMove) -> i32,
         time: &Instant,
-        moves: &Vec<(Direction, u8)>,
+        moves: &ArrayVec<[(Direction, u8);4]>,
     ) -> (Direction, i32) {
         let alpha = i32::MIN;
         let beta = i32::MAX;
@@ -361,7 +362,6 @@ impl State {
                     dir = d;
                 }
             }
-            
         }
         println!("Depth searched too: {}", depth);
         (dir, confidence)
@@ -416,6 +416,12 @@ impl State {
         }
         return nodes;
     }
+
+    // fn get_hash(&self) -> u64 {
+    //     let mut out = 0;
+
+    //     out
+    // }
 }
 
 impl Direction {
@@ -428,7 +434,11 @@ impl Direction {
         }
     }
 }
-
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::Up
+    }
+}
 impl FromStr for Direction {
     type Err = ParseIntError;
 
