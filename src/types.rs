@@ -277,6 +277,9 @@ impl State {
         if maximizing {
             let mut value = i32::MIN;
             let mut out = Direction::Up;
+            if self.state.you.get_moves(&self.state.board).len() == 1 {
+                return (i32::MAX , alpha, beta, self.state.you.get_moves(&self.state.board)[0].0);
+            }
             for current_move in self.state.you.get_moves(&self.state.board).clone() {
                 // let start = Instant::now();
                 // let delta = self.make_move(&vec![(current_move).clone()]);
@@ -352,16 +355,18 @@ impl State {
         let mut depth = 0;
         let mut confidence = 0;
         let mut dir = Direction::Up;
-        let max_depth = 30;
+        let max_depth = 130;
 
         while time.elapsed().as_millis() < 200 && depth <= max_depth {
             depth += 1;
+            let e = self.clone();
             match self.minimax(depth, alpha, beta, true, static_eval, (Direction::Up, 40)) {
                 (c, _, _, d) => {
                     confidence = c;
                     dir = d;
                 }
             }
+            assert_eq!(e, *self);
         }
         println!("Depth searched too: {}", depth);
         (dir, confidence)
