@@ -366,7 +366,7 @@ impl State {
                     dir = d;
                 }
             }
-            assert_eq!(e, *self);
+            // assert_eq!(e, *self);
         }
         println!("Depth searched too: {}", depth);
         (dir, confidence)
