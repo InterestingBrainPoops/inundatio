@@ -278,7 +278,7 @@ impl State {
             let mut value = i32::MIN;
             let mut out = Direction::Up;
             if self.state.you.get_moves(&self.state.board).len() == 1 {
-                return (i32::MAX , alpha, beta, self.state.you.get_moves(&self.state.board)[0].0);
+                return (0 , alpha, beta, self.state.you.get_moves(&self.state.board)[0].0);
             }
             for current_move in self.state.you.get_moves(&self.state.board).clone() {
                 // let start = Instant::now();
