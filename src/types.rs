@@ -350,24 +350,37 @@ impl State {
         time: &Instant,
         moves: &ArrayVec<[(Direction, u8);4]>,
     ) -> (Direction, i32) {
-        let alpha = i32::MIN;
-        let beta = i32::MAX;
-        let mut depth = 0;
+        
+        let mut depth = 1;
         let mut confidence = 0;
         let mut dir = Direction::Up;
         let max_depth = 130;
-
+        let init_eval = self.minimax(1, i32::MIN, i32::MAX, true, static_eval, (Direction::Up, 40));
+        let mut alpha = init_eval.0 - 80;
+        let mut beta = init_eval.0 + 80;
+        let mut sum = init_eval.0;
         while time.elapsed().as_millis() < 200 && depth <= max_depth {
-            depth += 1;
-            let e = self.clone();
+            // let e = self.clone();
             match self.minimax(depth, alpha, beta, true, static_eval, (Direction::Up, 40)) {
                 (c, _, _, d) => {
-                    confidence = c;
-                    dir = d;
+                    if c <= alpha {
+                        alpha -= 10;
+                    }else if c >= beta {
+                        beta += 10;
+                    }else {
+                        println!("{}", c);
+                        confidence = c;
+                        dir = d;
+                        alpha = c - 30;
+                        beta = c + 30;
+                        sum += c;
+                        depth += 1;
+                    }
                 }
             }
             // assert_eq!(e, *self);
         }
+        println!("avg score {}", sum as f64 / depth as f64);
         println!("Depth searched too: {}", depth);
         (dir, confidence)
     }
