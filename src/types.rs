@@ -368,7 +368,7 @@ impl State {
                     }else if c >= beta {
                         beta += 10;
                     }else {
-                        println!("{}", c);
+                        // println!("{}", c);
                         confidence = c;
                         dir = d;
                         alpha = c - 30;
