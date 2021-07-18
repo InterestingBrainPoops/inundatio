@@ -7,18 +7,37 @@ use crate::types::*;
 /// returns (reachable food) + (reachable squares) - (distance to target)
 pub fn eval(board: &SmallMove) -> i32 {
     let mut closest_pos = (&Coordinate::new(100, 100), 100);
-    for food in &board.board.food {
-        if closest_pos.1 > manhattan(food, &board.you.head) {
-            closest_pos.1 = manhattan(food, &board.you.head);
-            closest_pos.0 = food;
+    let mut biggest = true;
+    for x in &board.board.snakes {
+        if x.length >= board.you.length && x.id != board.you.id {
+            biggest = false;
+            break;
         }
     }
-    if closest_pos.1 == 100 {
-        closest_pos.1 = 0;
+    if biggest {
+        let mut smallest = (Coordinate::new(0,0),1000);
+        for x in &board.board.snakes {
+            if x.length < smallest.1 {
+                smallest.1 = x.length;
+                smallest.0 = x.head;
+            }
+        }
+        closest_pos.1 = manhattan(&board.you.head, &smallest.0);
+    }else {
+        for food in &board.board.food {
+            if closest_pos.1 > manhattan(food, &board.you.head) {
+                closest_pos.1 = manhattan(food, &board.you.head);
+                closest_pos.0 = food;
+            }
+        }
+        if closest_pos.1 == 100 {
+            closest_pos.1 = 0;
+        }
     }
-    (board.you.length * 1500) as i32
+    
+    (board.you.length * 10) as i32
         - ((board.board.snakes.len() - amnt_dead(board)) * 5) as i32
-        - closest_pos.1 * 30 + (flood_fill(board)*30) as i32
+        - closest_pos.1 * 300
 }
 
 fn amnt_dead(board: &SmallMove) -> usize {
