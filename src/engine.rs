@@ -17,7 +17,7 @@ pub fn eval(board: &SmallMove) -> i32 {
     if biggest {
         let mut smallest = (Coordinate::new(0,0),1000);
         for x in &board.board.snakes {
-            if x.length < smallest.1 {
+            if x.length < smallest.1  && x.id != board.you.id{
                 smallest.1 = x.length;
                 smallest.0 = x.head;
             }
@@ -37,7 +37,7 @@ pub fn eval(board: &SmallMove) -> i32 {
     let mut closest_snakehead = (&Coordinate::new(100, 100), 100);
     if !biggest {
         for food in &board.board.snakes {
-            if closest_snakehead.1 > manhattan(&food.head, &board.you.head) {
+            if closest_snakehead.1 > manhattan(&food.head, &board.you.head) && food.id != board.you.id {
                 closest_snakehead.1 = manhattan(&food.head, &board.you.head);
                 closest_snakehead.0 = &food.head;
             }
