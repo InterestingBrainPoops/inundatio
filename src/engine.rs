@@ -35,7 +35,7 @@ pub fn eval(board: &SmallMove) -> i32 {
         }
     }
     
-    (board.you.length * 10) as i32
+    (board.you.length * 300) as i32
         - ((board.board.snakes.len() - amnt_dead(board)) * 5) as i32
         - closest_pos.1 * 300
 }
