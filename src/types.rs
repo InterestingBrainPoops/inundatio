@@ -3,12 +3,14 @@ use crate::small::SmallBattleSnake;
 use crate::small::SmallMove;
 use crate::small::Status;
 use serde::Deserialize;
-use tinyvec::ArrayVec;
 use std::num::ParseIntError;
 use std::ops;
 use std::str::FromStr;
 use std::time::Instant;
 use std::u128;
+use tinyvec::ArrayVec;
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub struct Weights(pub i32, pub i32, pub i32, pub i32);
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Move {
@@ -80,11 +82,12 @@ pub struct Delta {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct State {
     pub state: SmallMove, // current state
+    pub weights: Weights,
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
     // at least i think
-    pub fn make_move(&mut self, moves: &ArrayVec<[(Direction, u8);2]>) -> Delta {
+    pub fn make_move(&mut self, moves: &ArrayVec<[(Direction, u8); 2]>) -> Delta {
         let mut out = Delta {
             died: vec![],
             tails: vec![],
@@ -102,7 +105,7 @@ impl State {
         }
         out
     }
-    fn move_snakes(&mut self, moves: &ArrayVec<[(Direction, u8);2]>) -> Vec<(u8, Coordinate)> {
+    fn move_snakes(&mut self, moves: &ArrayVec<[(Direction, u8); 2]>) -> Vec<(u8, Coordinate)> {
         let mut out: Vec<(u8, Coordinate)> = vec![];
         for snake in &mut self.state.board.snakes {
             for snake_move in moves {
@@ -256,7 +259,7 @@ impl State {
         mut alpha: i32,
         mut beta: i32,
         maximizing: bool,
-        static_eval: &dyn Fn(&SmallMove) -> i32,
+        static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         you_move: (Direction, u8),
     ) -> (i32, i32, i32, Direction) {
         if self.state.you.status == Status::Dead {
@@ -270,7 +273,7 @@ impl State {
         }
         if depth == 0 {
             // let start = Instant::now();
-            let x = static_eval(&self.state);
+            let x = static_eval(&self.state, self.weights);
             // *count += start.elapsed();
             return (x, alpha, beta, Direction::Up);
         }
@@ -331,7 +334,10 @@ impl State {
         }
     }
     /// It will return a 2D array of moves for the opposing team.
-    fn get_moves(&self, you_move: (Direction, u8)) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
+    fn get_moves(
+        &self,
+        you_move: (Direction, u8),
+    ) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
         let mut out = tinyvec::array_vec!([tinyvec::ArrayVec<[(Direction, u8); 4 ]>;2] => tinyvec::array_vec!([(Direction, u8) ; 4] => you_move));
         for x in (&self.state.board.snakes)
             .into_iter()
@@ -346,16 +352,22 @@ impl State {
 
     pub fn iterative_deepen(
         &mut self,
-        static_eval: &dyn Fn(&SmallMove) -> i32,
+        static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         time: &Instant,
-        moves: &ArrayVec<[(Direction, u8);4]>,
+        moves: &ArrayVec<[(Direction, u8); 4]>,
     ) -> (Direction, i32) {
-        
         let mut depth = 1;
         let mut confidence = 0;
         let mut dir = Direction::Up;
         let max_depth = 130;
-        let init_eval = self.minimax(1, i32::MIN, i32::MAX, true, static_eval, (Direction::Up, 40));
+        let init_eval = self.minimax(
+            1,
+            i32::MIN,
+            i32::MAX,
+            true,
+            static_eval,
+            (Direction::Up, 40),
+        );
         let mut alpha = init_eval.0 - 80;
         let mut beta = init_eval.0 + 80;
         let mut sum = init_eval.0;
@@ -365,9 +377,9 @@ impl State {
                 (c, _, _, d) => {
                     if c <= alpha {
                         alpha -= 10;
-                    }else if c >= beta {
+                    } else if c >= beta {
                         beta += 10;
-                    }else {
+                    } else {
                         // println!("{}", c);
                         confidence = c;
                         dir = d;
@@ -387,7 +399,7 @@ impl State {
 
     pub fn get_best(
         &mut self,
-        static_eval: &dyn Fn(&SmallMove) -> i32,
+        static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         time: &Instant,
     ) -> (Direction, i32) {
         // println!("{:?}", self.state);

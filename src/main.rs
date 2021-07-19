@@ -1,6 +1,7 @@
 mod cartprod;
 mod engine;
 mod small;
+mod train;
 mod types;
 // use crate::{
 //     small::{SmallBattleSnake, Status::*},
@@ -13,35 +14,45 @@ mod types;
 use dotenv::dotenv;
 use serde_json::json;
 use std::time::Instant;
+use structopt::StructOpt;
 use types::*;
 use warp::http::StatusCode;
 use warp::Filter;
 use warp::Rejection;
+#[derive(StructOpt)]
+enum Mode {
+    Run,
+    Train,
+}
+
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-    let index = warp::path::end().map(|| {
-        warp::reply::json(&json!({
-            "apiversion": "1",
-            "color": "#65bbc7",
-            "head": "sand-worm",
-            "tail": "rbc-necktie",
-        }))
-    });
-    let start = warp::path("start")
-        .and(warp::post())
-        .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
-    let end = warp::path("end")
-        .and(warp::post())
-        .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
-    let get_move = warp::path("move")
+    let args = Mode::from_args();
+    match args {
+        Mode::Run => {
+            dotenv().ok();
+            let index = warp::path::end().map(|| {
+                warp::reply::json(&json!({
+                    "apiversion": "1",
+                    "color": "#65bbc7",
+                    "head": "sand-worm",
+                    "tail": "rbc-necktie",
+                }))
+            });
+            let start = warp::path("start")
+                .and(warp::post())
+                .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
+            let end = warp::path("end")
+                .and(warp::post())
+                .map(|| warp::reply::with_status("", StatusCode::IM_A_TEAPOT));
+            let get_move = warp::path("move")
         .and(warp::post())
         .and(warp::body::json())
         .and_then(|sent_move: Move| async move {
             println!("GOT MOVE");
             println!("Turn: {}, gameID: {}", sent_move.turn, sent_move.game.id);
             let t0 = Instant::now();
-            let mut state = State{state:sent_move.into_small()};
+            let mut state = State{state:sent_move.into_small(), weights: Weights(700, 5, 300, 30)};
             // println!("{:?}", state);
             let out_move;
             // println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
@@ -53,13 +64,18 @@ async fn main() {
                 "shout": "We've been trying to reach you concerning your vehicle's extended warranty."
             }))) as Result<_, Rejection>
         });
-    let routes = index.or(start).or(end).or(get_move);
-    let port = std::env::var("PORT")
-        .expect("PORT Environment Variable not set")
-        .parse()
-        .expect("PORT is not an integer");
-    println!("Listening on port {}", port);
-    warp::serve(routes).run(([0, 0, 0, 0], port)).await;
+            let routes = index.or(start).or(end).or(get_move);
+            let port = std::env::var("PORT")
+                .expect("PORT Environment Variable not set")
+                .parse()
+                .expect("PORT is not an integer");
+            println!("Listening on port {}", port);
+            warp::serve(routes).run(([0, 0, 0, 0], port)).await;
+        }
+        Mode::Train => {
+
+        }
+    }
 }
 
 // test thing, ignore.
