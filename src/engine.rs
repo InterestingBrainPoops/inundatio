@@ -34,10 +34,21 @@ pub fn eval(board: &SmallMove) -> i32 {
             closest_pos.1 = 0;
         }
     }
-    
-    (board.you.length * 300) as i32
+    let mut closest_snakehead = (&Coordinate::new(100, 100), 100);
+    if !biggest {
+        for food in &board.board.snakes {
+            if closest_snakehead.1 > manhattan(&food.head, &board.you.head) {
+                closest_snakehead.1 = manhattan(&food.head, &board.you.head);
+                closest_snakehead.0 = &food.head;
+            }
+        }
+        if closest_snakehead.1 == 100 {
+            closest_snakehead.1 = 0;
+        }
+    }
+    (board.you.length * 700) as i32
         - ((board.board.snakes.len() - amnt_dead(board)) * 5) as i32
-        - closest_pos.1 * 300
+        - closest_pos.1 * 300 - closest_snakehead.1 * 30
 }
 
 fn amnt_dead(board: &SmallMove) -> usize {
