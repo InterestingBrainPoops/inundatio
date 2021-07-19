@@ -55,7 +55,7 @@ pub fn partial_cartesian(a: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8
 pub fn cartesian_product(lists: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 4]>; 2]>) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
     match lists.split_first() {
         Some((first, rest)) => {
-            let init: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> = first.iter().cloned().map(|n| array_vec!([(Direction, u8); 2] => first[0])).collect();
+            let init: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> = first.iter().cloned().map(|n| array_vec!([(Direction, u8); 2] => n)).collect();
 
             rest.iter()
                 .cloned()
