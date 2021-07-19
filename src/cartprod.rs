@@ -1,3 +1,7 @@
+use tinyvec::{array_vec, tiny_vec};
+
+use crate::types::Direction;
+
 // excerpted from : https://gist.github.com/kylewlacy/115965b40e02a3325558
 /// Given a vector containing a partial Cartesian product, and a list of items,
 /// return a vector adding the list of items to the partial Cartesian product.
@@ -17,7 +21,7 @@
 ///                               vec![2, 5, 6],
 ///                               vec![2, 5, 7]]);
 /// ```
-pub fn partial_cartesian<T: Clone>(a: Vec<Vec<T>>, b: Vec<T>) -> Vec<Vec<T>> {
+pub fn partial_cartesian(a: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]>, b: tinyvec::ArrayVec<[(Direction, u8); 4]>) ->  tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
     a.into_iter()
         .flat_map(|xs| {
             b.iter()
@@ -48,17 +52,17 @@ pub fn partial_cartesian<T: Clone>(a: Vec<Vec<T>>, b: Vec<T>) -> Vec<Vec<T>> {
 ///                          vec![2, 5, 6],
 ///                          vec![2, 5, 7]]);
 /// ```
-pub fn cartesian_product<T: Clone>(lists: Vec<Vec<T>>) -> Vec<Vec<T>> {
+pub fn cartesian_product(lists: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 4]>; 2]>) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
     match lists.split_first() {
         Some((first, rest)) => {
-            let init: Vec<Vec<T>> = first.iter().cloned().map(|n| vec![n]).collect();
+            let init: tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> = first.iter().cloned().map(|n| array_vec!([(Direction, u8); 2] => first[0])).collect();
 
             rest.iter()
                 .cloned()
                 .fold(init, |vec, list| partial_cartesian(vec, list))
         }
         None => {
-            vec![]
+            array_vec!()
         }
     }
 }
