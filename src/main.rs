@@ -19,6 +19,9 @@ use types::*;
 use warp::http::StatusCode;
 use warp::Filter;
 use warp::Rejection;
+
+use crate::train::Trainer;
+use crate::train::Variant;
 #[derive(StructOpt)]
 enum Mode {
     Run,
@@ -73,7 +76,7 @@ async fn main() {
             warp::serve(routes).run(([0, 0, 0, 0], port)).await;
         }
         Mode::Train => {
-
+            println!("{:?}", Trainer{variants: vec![]}.tune(Variant::new(Weights(0,0,0,0)), 30))
         }
     }
 }
