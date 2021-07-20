@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "alea"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ede693b8b68de5c67cb479dd842a4bdb9d6bf6f07b58e37eab0f01dcdbc48700"
+
+[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -442,6 +448,7 @@ dependencies = [
 name = "inundatio"
 version = "0.1.0"
 dependencies = [
+ "alea",
  "dotenv",
  "serde",
  "serde_json",
