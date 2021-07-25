@@ -90,7 +90,7 @@ impl Trainer {
         } else if s1.state.you.status == Status::Alive {
             self.variants[g1].reg_win();
             self.variants[g2].reg_loss();
-        } else if s1.state.you.status == Status::Alive {
+        } else if s2.state.you.status == Status::Alive {
             self.variants[g1].reg_loss();
             self.variants[g2].reg_win();
         }

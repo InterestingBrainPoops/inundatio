@@ -422,10 +422,9 @@ impl State {
     }
     pub fn perft(&mut self, depth: u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
         let mut nodes = 0;
-        if self.state.you.status == Status::Dead {
-            // println!("e");
-            return 1;
-        } else if self.state.board.snakes.len() - self.amnt_dead() == 1 {
+        if self.state.you.status == Status::Dead
+            || self.state.board.snakes.len() - self.amnt_dead() == 1
+        {
             // println!("e");
 
             return 1;
