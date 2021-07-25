@@ -9,6 +9,7 @@ use std::str::FromStr;
 use std::time::Instant;
 use std::u128;
 use tinyvec::ArrayVec;
+
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Weights(pub i32, pub i32, pub i32, pub i32);
 
