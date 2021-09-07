@@ -1,11 +1,19 @@
 use crate::{
     engine::eval,
     small::{SmallBattleSnake, SmallMove, Status},
-    types::{self, Coordinate, Direction, State, Weights},
+    types::{Coordinate, Direction, State, Weights},
 };
 use fastrand::i32;
+use rand::thread_rng;
+use rand::{seq::SliceRandom, Rng};
 use std::time::Instant;
 use tinyvec::array_vec;
+
+macro_rules! newc {
+    ($x:expr, $y:expr) => {
+        Coordinate::new($x, $y)
+    };
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Trainer {
@@ -127,10 +135,75 @@ pub struct Game {
 impl Game {
     /// returns a SmallMove that is derived from the game.
     pub fn for_id(&self, id: u8) -> SmallMove {
-        todo!();
+        let mut out = SmallMove::new();
+        let mut you = &self.snakes[0];
+        for x in &self.snakes {
+            if x.id == id {
+                you = x;
+            }
+        }
+        out.board.snakes = self.snakes.clone();
+        out.board.food = self.food.clone();
+        out.board.width = self.width as i8;
+        out.board.height = self.height as i8;
+        out.you = you.clone();
+        out.turn = 0;
+        out
     }
     /// returns a start position based on the number of snakes
     pub fn gen_start(num_snakes: u8) -> Self {
-        todo!();
+        let mut out = Game {
+            snakes: vec![],
+            food: vec![],
+            width: 11,
+            height: 11,
+        };
+
+        out.place_snakes(num_snakes);
+        out.place_food();
+        out
+    }
+    /// Place Snakes
+    fn place_snakes(&mut self, num_snakes: u8) {
+        let (mn, md, mx) = (1_i8, ((self.width - 1) / 2) as i8, (self.width - 2) as i8);
+        let mut start_points = vec![
+            newc!(mn, mn),
+            newc!(mn, md),
+            newc!(mn, mx),
+            newc!(md, mn),
+            newc!(md, mx),
+            newc!(mx, mn),
+            newc!(mx, md),
+            newc!(mx, mx),
+        ];
+        start_points.shuffle(&mut thread_rng());
+        for x in 0..num_snakes {
+            self.snakes
+                .push(SmallBattleSnake::new(x, 100, &vec![newc!(3, 3)]));
+        }
+        for y in &mut self.snakes {
+            for _ in 0..3 {
+                y.body.push(start_points[y.id as usize]);
+            }
+            y.head = y.body[0];
+            y.length = 3;
+            y.status = Status::Alive;
+        }
+    }
+    /// place all food
+    /// 1 in center
+    /// 1 piece of food per snake that is 2 moves away.
+    fn place_food(&mut self) {
+        for x in &self.snakes {
+            let possible_food_locations = [
+                newc!(x.head.x - 1, x.head.y - 1),
+                newc!(x.head.x - 1, x.head.y + 1),
+                newc!(x.head.x + 1, x.head.y - 1),
+                newc!(x.head.x + 1, x.head.y + 1),
+            ];
+            self.food
+                .push(possible_food_locations[thread_rng().gen_range(0..4)]);
+        }
+        self.food.push(newc!(6, 6));
     }
 }

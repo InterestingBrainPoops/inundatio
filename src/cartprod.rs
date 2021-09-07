@@ -1,4 +1,4 @@
-use tinyvec::{array_vec, tiny_vec};
+use tinyvec::array_vec;
 
 use crate::types::Direction;
 
@@ -30,7 +30,7 @@ pub fn partial_cartesian(
             b.iter()
                 .cloned()
                 .map(|y| {
-                    let mut vec = xs.clone();
+                    let mut vec = xs;
                     vec.push(y);
                     vec
                 })
@@ -66,9 +66,7 @@ pub fn cartesian_product(
                 .map(|n| array_vec!([(Direction, u8); 2] => n))
                 .collect();
 
-            rest.iter()
-                .cloned()
-                .fold(init, |vec, list| partial_cartesian(vec, list))
+            rest.iter().cloned().fold(init, partial_cartesian)
         }
         None => {
             array_vec!()

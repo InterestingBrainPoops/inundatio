@@ -284,7 +284,7 @@ impl State {
             // if self.state.you.get_moves(&self.state.board).len() == 1 {
             //     return (0 , alpha, beta, self.state.you.get_moves(&self.state.board)[0].0);
             // }
-            for current_move in self.state.you.get_moves(&self.state.board).clone() {
+            for current_move in self.state.you.get_moves(&self.state.board) {
                 // let start = Instant::now();
                 // let delta = self.make_move(&vec![(current_move).clone()]);
                 // *count += start.elapsed();
@@ -309,7 +309,7 @@ impl State {
                 }
                 alpha = i32::max(alpha, value);
             }
-            return (value, alpha, beta, out);
+            (value, alpha, beta, out)
         } else {
             let mut value = i32::MAX;
             for current_move in &self.get_moves(you_move) {
@@ -324,14 +324,14 @@ impl State {
                 );
                 // let start = Instant::now();
                 self.unmake_move(&delta);
-                // assert_eq!(e.state.board.snakes, *self.state.board.snakes);
+                assert_eq!(e.state.board.snakes, *self.state.board.snakes);
                 // *count += start.elapsed();
                 if value <= alpha {
                     break;
                 }
                 beta = i32::min(beta, value);
             }
-            return (value, alpha, beta, Direction::Up);
+            (value, alpha, beta, Direction::Up)
         }
     }
     /// It will return a 2D array of moves for the opposing team.
@@ -341,7 +341,7 @@ impl State {
     ) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
         let mut out = tinyvec::array_vec!([tinyvec::ArrayVec<[(Direction, u8); 4 ]>;2] => tinyvec::array_vec!([(Direction, u8) ; 4] => you_move));
         for x in (&self.state.board.snakes)
-            .into_iter()
+            .iter()
             .filter(|x| x.id != self.state.you.id && x.status == Status::Alive)
         {
             out.push(x.get_moves(&self.state.board));
@@ -357,7 +357,7 @@ impl State {
         time: &Instant,
         moves: &ArrayVec<[(Direction, u8); 4]>,
     ) -> (Direction, i32) {
-        let mut depth = 1;
+        let mut depth = 2;
         let mut confidence = 0;
         let mut dir = Direction::Up;
         let max_depth = 130;
@@ -369,29 +369,20 @@ impl State {
             static_eval,
             (Direction::Up, 40),
         );
-        let mut alpha = init_eval.0 - 80;
-        let mut beta = init_eval.0 + 80;
         let mut sum = init_eval.0;
         while time.elapsed().as_millis() < 200 && depth <= max_depth {
-            // let e = self.clone();
-            match self.minimax(depth, alpha, beta, true, static_eval, (Direction::Up, 40)) {
-                (c, _, _, d) => {
-                    if c <= alpha {
-                        alpha -= 10;
-                    } else if c >= beta {
-                        beta += 10;
-                    } else {
-                        // println!("{}", c);
-                        confidence = c;
-                        dir = d;
-                        alpha = c - 30;
-                        beta = c + 30;
-                        sum += c;
-                        depth += 1;
-                    }
-                }
-            }
-            // assert_eq!(e, *self);
+            let (c, _, _, d) = self.minimax(
+                depth,
+                i32::MIN,
+                i32::MAX,
+                true,
+                static_eval,
+                (Direction::Up, 40),
+            );
+            sum += c;
+            confidence = c;
+            dir = d;
+            depth += 1;
         }
         println!("avg score {}", sum as f64 / depth as f64);
         println!("Depth searched too: {}", depth);
@@ -406,7 +397,7 @@ impl State {
         // println!("{:?}", self.state);
         let e = self.clone();
         let moves = self.state.you.get_moves(&self.state.board);
-        if moves.len() == 0 {
+        if moves.is_empty() {
             return (Direction::Up, i32::MIN);
         }
         let out = (moves[0].0, i32::MAX);
@@ -444,7 +435,7 @@ impl State {
                 self.unmake_move(&delta);
             }
         }
-        return nodes;
+        nodes
     }
 
     // fn get_hash(&self) -> u64 {

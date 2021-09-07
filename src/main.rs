@@ -76,7 +76,10 @@ async fn main() {
             warp::serve(routes).run(([0, 0, 0, 0], port)).await;
         }
         Mode::Train => {
-            println!("{:?}", Trainer{variants: vec![]}.tune(Variant::new(Weights(0,0,0,0)), 30))
+            println!(
+                "{:?}",
+                Trainer { variants: vec![] }.tune(Variant::new(Weights(700, 5, 300, 30)), 10)
+            )
         }
     }
 }

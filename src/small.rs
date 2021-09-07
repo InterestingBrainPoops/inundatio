@@ -1,6 +1,5 @@
 use crate::types::{Coordinate, Direction};
 use serde::Deserialize;
-use tinyvec;
 #[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 pub struct SmallBattleSnake {
     pub id: u8,
@@ -75,19 +74,16 @@ impl SmallBattleSnake {
         if other.body[1..].contains(&self.head) {
             return true;
         }
-        return false;
+        false
     }
     pub fn lost_head_to_head(&self, other: &SmallBattleSnake) -> bool {
         if self.head == other.head && self.length <= other.length {
             return true;
         }
-        return false;
+        false
     }
     pub fn is_out_of_bounds(&self, width: i8, height: i8) -> bool {
-        return self.head.x < 0
-            || self.head.y < 0
-            || self.head.x > width - 1
-            || self.head.y > height - 1;
+        self.head.x < 0 || self.head.y < 0 || self.head.x > width - 1 || self.head.y > height - 1
     }
 }
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]

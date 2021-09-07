@@ -15,6 +15,7 @@ dotenv = "0.15.0"
 tinyvec = "1.0.1"
 structopt = "0.3.22"
 fastrand = "1.5.0"
+rand = "0.8.4"
 
 [profile.release]
 debug = true
