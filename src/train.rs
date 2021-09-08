@@ -1,5 +1,6 @@
 use crate::{
     engine::eval,
+    move_table::MoveTable,
     small::{SmallBattleSnake, SmallMove, Status},
     types::{Coordinate, Direction, State, Weights},
 };
@@ -79,10 +80,16 @@ impl Trainer {
         let mut s1 = State {
             weights: self.variants[g1].genome,
             state: init_state.for_id(1),
+            move_table: MoveTable::new(),
+            zobrist: 0,
+            current_depth: 0,
         };
         let mut s2 = State {
             weights: self.variants[g2].genome,
             state: init_state.for_id(2),
+            move_table: MoveTable::new(),
+            zobrist: 0,
+            current_depth: 0,
         };
         let time = Instant::now();
         while s2.amnt_dead() == 0 {

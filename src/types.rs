@@ -1,4 +1,5 @@
 use crate::cartprod;
+use crate::move_table::MoveTable;
 use crate::small::SmallBattleSnake;
 use crate::small::SmallMove;
 use crate::small::Status;
@@ -10,6 +11,7 @@ use std::time::Instant;
 use std::u128;
 use tinyvec::ArrayVec;
 
+pub const TABLE_SIZE: usize = 2000000; // At 4 bits per entry, this causes a size of 1 megabyte.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Weights(pub i32, pub i32, pub i32, pub i32);
 
@@ -84,6 +86,9 @@ pub struct Delta {
 pub struct State {
     pub state: SmallMove, // current state
     pub weights: Weights,
+    pub move_table: MoveTable,
+    pub zobrist: u64,
+    pub current_depth: u8,
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
@@ -104,7 +109,20 @@ impl State {
                 break;
             }
         }
+        self.update_zobrist(moves);
         out
+    }
+    /// Updates the zobrist hash given the moves.
+    /// Its symmetrical , so calling it twice will have the same effect as not calling it at all.
+    fn update_zobrist(&mut self, moves: &ArrayVec<[(Direction, u8); 2]>) {
+        // turn moves into a u8 that uses the encoding decided on
+        // player 0 goes first (in binary (basically on the left.))
+        // shift it into the current hash.
+        // In the hash, the first move goes all the way to the right.
+        let p1 = moves[0].0.bits();
+        let p2 = moves[1].0.bits();
+        let combined = ((p2 << 2) ^ p1) as u64;
+        self.zobrist ^= combined << (self.current_depth * 4);
     }
     fn move_snakes(&mut self, moves: &ArrayVec<[(Direction, u8); 2]>) -> Vec<(u8, Coordinate)> {
         let mut out: Vec<(u8, Coordinate)> = vec![];
@@ -159,7 +177,7 @@ impl State {
             }
 
             // head to head and self collisions
-            if snake.collision_with(&snake) {
+            if snake.collision_with(snake) {
                 snake.status = Status::Dead;
                 out.push(snake.id);
                 continue;
@@ -172,7 +190,7 @@ impl State {
             for other in &self.state.board.snakes {
                 if other.id != snake.id
                     && other.status != Status::Dead
-                    && snake.collision_with(&other)
+                    && snake.collision_with(other)
                 {
                     collision_eliminations.push(snake.id);
                     collide = true;
@@ -186,7 +204,7 @@ impl State {
             for other in &self.state.board.snakes {
                 if other.id != snake.id
                     && other.status != Status::Dead
-                    && snake.lost_head_to_head(&other)
+                    && snake.lost_head_to_head(other)
                 {
                     collision_eliminations.push(snake.id);
                     collide = true;
@@ -263,6 +281,7 @@ impl State {
         static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         you_move: (Direction, u8),
     ) -> (i32, i32, i32, Direction) {
+        println!("Depth: {}", depth);
         if self.state.you.status == Status::Dead {
             // println!("{:?}, {}", self.dead, depth);
             // im dead
@@ -311,25 +330,31 @@ impl State {
             }
             (value, alpha, beta, out)
         } else {
+            let mut best_move = tinyvec::array_vec!([(Direction, u8); 2]);
             let mut value = i32::MAX;
-            for current_move in &self.get_moves(you_move) {
+            for current_move in &self.get_ordered_moves(you_move) {
                 // let start = Instant::now();
-                let e = self.clone();
-                let delta = self.make_move(current_move);
-                // *count += start.elapsed();
+                let delta = self.make_move(current_move); // make the current move and store the irreversable bits.
+                                                          // *count += start.elapsed();
                 value = i32::min(
                     value,
                     self.minimax(depth - 1, alpha, beta, !maximizing, static_eval, you_move)
                         .0,
                 );
-                // let start = Instant::now();
-                self.unmake_move(&delta);
-                assert_eq!(e.state.board.snakes, *self.state.board.snakes);
-                // *count += start.elapsed();
+                self.unmake_move(&delta); // unmake the current move
+
                 if value <= alpha {
+                    if best_move != self.move_table.get(self.zobrist) {
+                        self.move_table.set(self.zobrist, best_move);
+                    }
+                    self.update_zobrist(current_move); // revert the zobrist hash
                     break;
                 }
-                beta = i32::min(beta, value);
+                self.update_zobrist(current_move); // revert the zobrist hash
+                if beta > value {
+                    best_move = *current_move;
+                    beta = value;
+                }
             }
             (value, alpha, beta, Direction::Up)
         }
@@ -346,16 +371,22 @@ impl State {
         {
             out.push(x.get_moves(&self.state.board));
         }
-        let x = cartprod::cartesian_product(out);
-
-        x
+        cartprod::cartesian_product(out)
     }
-
+    fn get_ordered_moves(
+        &self,
+        you_move: (Direction, u8),
+    ) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
+        let mut out = self.get_moves(you_move);
+        let best_move = self.move_table.get(self.zobrist);
+        out.remove(out.iter().position(|x| *x == best_move).unwrap());
+        out.insert(0, best_move);
+        out
+    }
     pub fn iterative_deepen(
         &mut self,
         static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         time: &Instant,
-        moves: &ArrayVec<[(Direction, u8); 4]>,
     ) -> (Direction, i32) {
         let mut depth = 2;
         let mut confidence = 0;
@@ -409,9 +440,9 @@ impl State {
             println!("{:#?}", e);
             println!("{:#?}", self);
         }
-        self.iterative_deepen(static_eval, time, &moves)
+        self.iterative_deepen(static_eval, time)
     }
-    pub fn perft(&mut self, depth: u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
+    pub fn _perft(&mut self, depth: u8, you_move: (Direction, u8), maximizing: bool) -> u32 {
         let mut nodes = 0;
         if self.state.you.status == Status::Dead
             || self.state.board.snakes.len() - self.amnt_dead() == 1
@@ -426,12 +457,12 @@ impl State {
 
         if maximizing {
             for m in self.state.you.get_moves(&self.state.board) {
-                nodes += self.perft(depth, m, !maximizing);
+                nodes += self._perft(depth, m, !maximizing);
             }
         } else {
             for moves in &self.get_moves(you_move) {
                 let delta = self.make_move(moves);
-                nodes += self.perft(depth - 1, you_move, !maximizing);
+                nodes += self._perft(depth - 1, you_move, !maximizing);
                 self.unmake_move(&delta);
             }
         }
@@ -452,6 +483,14 @@ impl Direction {
             Direction::Down => "down",
             Direction::Left => "left",
             Direction::Right => "right",
+        }
+    }
+    fn bits(&self) -> u8 {
+        match self {
+            Direction::Up => 0,
+            Direction::Down => 1,
+            Direction::Left => 2,
+            Direction::Right => 3,
         }
     }
 }

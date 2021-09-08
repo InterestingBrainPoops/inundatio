@@ -1,5 +1,6 @@
 mod cartprod;
 mod engine;
+mod move_table;
 mod small;
 mod train;
 mod types;
@@ -20,6 +21,7 @@ use warp::http::StatusCode;
 use warp::Filter;
 use warp::Rejection;
 
+use crate::move_table::MoveTable;
 use crate::train::Trainer;
 use crate::train::Variant;
 #[derive(StructOpt)]
@@ -55,7 +57,7 @@ async fn main() {
             println!("GOT MOVE");
             println!("Turn: {}, gameID: {}", sent_move.turn, sent_move.game.id);
             let t0 = Instant::now();
-            let mut state = State{state:sent_move.into_small(), weights: Weights(700, 5, 300, 30)};
+            let mut state = State{state:sent_move.into_small(), weights: Weights(700, 5, 300, 30), move_table: MoveTable::new(), zobrist : 0, current_depth:0};
             // println!("{:?}", state);
             let out_move;
             // println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
