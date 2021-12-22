@@ -83,6 +83,7 @@ impl Trainer {
             move_table: MoveTable::new(),
             zobrist: 0,
             current_depth: 0,
+            tt_hits: (0, 0),
         };
         let mut s2 = State {
             weights: self.variants[g2].genome,
@@ -90,6 +91,7 @@ impl Trainer {
             move_table: MoveTable::new(),
             zobrist: 0,
             current_depth: 0,
+            tt_hits: (0, 0),
         };
         let time = Instant::now();
         while s2.amnt_dead() == 0 {

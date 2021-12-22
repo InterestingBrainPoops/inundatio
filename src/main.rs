@@ -33,6 +33,7 @@ enum Mode {
 #[tokio::main]
 async fn main() {
     let args = Mode::from_args();
+    println!("Here");
     match args {
         Mode::Run => {
             dotenv().ok();
@@ -57,12 +58,13 @@ async fn main() {
             println!("GOT MOVE");
             println!("Turn: {}, gameID: {}", sent_move.turn, sent_move.game.id);
             let t0 = Instant::now();
-            let mut state = State{state:sent_move.into_small(), weights: Weights(700, 5, 300, 30), move_table: MoveTable::new(), zobrist : 0, current_depth:0};
+            let mut state = State{tt_hits: (0,0),state:sent_move.into_small(), weights: Weights(700, 5, 300, 30), move_table: MoveTable::new(), zobrist : 0, current_depth:0};
             // println!("{:?}", state);
             let out_move;
             // println!("{:?}", pstate.state.you.get_moves(&pstate.state.board));
             // println!("{}", pstate.perft(1, (Direction::Up, 5), true));
             out_move = state.get_best(&engine::eval,&t0);
+            println!("Total tt attempts: {}, total tt hits: {}, success rate: {}%", state.tt_hits.0, state.tt_hits.1, (state.tt_hits.1 as f64) / (state.tt_hits.0 as f64) * 100.0);
             println!("Direction chosen: {:?}, Eval : {}", out_move.0, out_move.1);
             Ok(warp::reply::json(&json!({
                 "move": out_move.0.as_str(),

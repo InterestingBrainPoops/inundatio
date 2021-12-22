@@ -11,7 +11,7 @@ use std::time::Instant;
 use std::u128;
 use tinyvec::ArrayVec;
 
-pub const TABLE_SIZE: usize = 2000000; // At 4 bits per entry, this causes a size of 1 megabyte.
+pub const TABLE_SIZE: usize = 2000000; // At 12 bytes per entry, this causes a size of 24 megabytes.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Weights(pub i32, pub i32, pub i32, pub i32);
 
@@ -89,6 +89,7 @@ pub struct State {
     pub move_table: MoveTable,
     pub zobrist: u64,
     pub current_depth: u8,
+    pub tt_hits: (u64, u64), // (total times i pinged the table, total number of legal moves)
 }
 impl State {
     // TODO: THIS HAS A LOT OF CLONES. probably not a good idea because memory space / usage will go up fast.
@@ -119,10 +120,14 @@ impl State {
         // player 0 goes first (in binary (basically on the left.))
         // shift it into the current hash.
         // In the hash, the first move goes all the way to the right.
-        let p1 = moves[0].0.bits();
-        let p2 = moves[1].0.bits();
-        let combined = ((p2 << 2) ^ p1) as u64;
-        self.zobrist ^= combined << (self.current_depth * 4);
+
+        let p1 = ((self.state.board.snakes[0].head.x as u16) << 8)
+            | (self.state.board.snakes[0].head.y as u16);
+        let p2 = ((self.state.board.snakes[1].head.x as u16) << 8)
+            | (self.state.board.snakes[1].head.y as u16);
+        let combined = ((p1 as u64) << 32) ^ (p2 as u64);
+
+        self.zobrist ^= combined;
     }
     fn move_snakes(&mut self, moves: &ArrayVec<[(Direction, u8); 2]>) -> Vec<(u8, Coordinate)> {
         let mut out: Vec<(u8, Coordinate)> = vec![];
@@ -281,7 +286,6 @@ impl State {
         static_eval: &dyn Fn(&SmallMove, Weights) -> i32,
         you_move: (Direction, u8),
     ) -> (i32, i32, i32, Direction) {
-        println!("Depth: {}", depth);
         if self.state.you.status == Status::Dead {
             // println!("{:?}, {}", self.dead, depth);
             // im dead
@@ -320,13 +324,10 @@ impl State {
                     out = current_move.0;
                     value = x.0;
                 }
-                // let start = Instant::now();
-                // self.unmake_move(&delta);
-                // *count += start.elapsed();
+                alpha = i32::max(alpha, value);
                 if value >= beta {
                     break; // beta cutoff
                 }
-                alpha = i32::max(alpha, value);
             }
             (value, alpha, beta, out)
         } else {
@@ -342,19 +343,18 @@ impl State {
                         .0,
                 );
                 self.unmake_move(&delta); // unmake the current move
-
+                if beta > value {
+                    best_move = *current_move;
+                    beta = value;
+                }
                 if value <= alpha {
                     if best_move != self.move_table.get(self.zobrist) {
-                        self.move_table.set(self.zobrist, best_move);
+                        self.move_table.set(self.zobrist, best_move, depth, value);
                     }
                     self.update_zobrist(current_move); // revert the zobrist hash
                     break;
                 }
                 self.update_zobrist(current_move); // revert the zobrist hash
-                if beta > value {
-                    best_move = *current_move;
-                    beta = value;
-                }
             }
             (value, alpha, beta, Direction::Up)
         }
@@ -374,13 +374,21 @@ impl State {
         cartprod::cartesian_product(out)
     }
     fn get_ordered_moves(
-        &self,
+        &mut self,
         you_move: (Direction, u8),
     ) -> tinyvec::ArrayVec<[tinyvec::ArrayVec<[(Direction, u8); 2]>; 16]> {
         let mut out = self.get_moves(you_move);
         let best_move = self.move_table.get(self.zobrist);
-        out.remove(out.iter().position(|x| *x == best_move).unwrap());
-        out.insert(0, best_move);
+        // explanation of what follows:
+        // Find out if the best move from the table is legal
+        //  remove the move from where it is
+        //  add it back in at the beginning
+        self.tt_hits.0 += 1;
+        if let Some(move_pos) = out.iter().position(|x| *x == best_move) {
+            out.remove(move_pos);
+            out.insert(0, best_move);
+            self.tt_hits.1 += 1;
+        }
         out
     }
     pub fn iterative_deepen(
@@ -436,7 +444,7 @@ impl State {
             return out;
         }
 
-        if e.state.board.snakes != *self.state.board.snakes {
+        if e.state.board.food != *self.state.board.food {
             println!("{:#?}", e);
             println!("{:#?}", self);
         }
