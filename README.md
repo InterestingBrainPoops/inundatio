@@ -1,3 +1,6 @@
+NOTICE:  
+This project has now been superseded by the shrimp project, so this is primarily staying up as a reference.
+
 # inundiato
 A Rust Battlesnake built using the warpy_snake template.
 
