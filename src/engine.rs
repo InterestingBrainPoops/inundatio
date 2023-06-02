@@ -1,3 +1,5 @@
+use crate::game::board::Coordinate;
+use crate::game::small::{SmallMove, Status};
 use crate::small::{SmallMove, Status};
 use crate::types::*;
 // gets the best move given a board state.

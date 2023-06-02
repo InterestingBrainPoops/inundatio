@@ -1,4 +1,5 @@
 use tinyvec::array_vec;
+use crate::game::board::Direction;
 
 use crate::types::Direction;
 

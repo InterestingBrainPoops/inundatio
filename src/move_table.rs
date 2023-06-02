@@ -1,4 +1,5 @@
 use std::ops::{Index, IndexMut};
+use crate::game::board::Direction;
 
 use crate::types::{Direction, TABLE_SIZE};
 

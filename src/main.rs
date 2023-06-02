@@ -1,9 +1,8 @@
 mod cartprod;
 mod engine;
 mod move_table;
-mod small;
-mod train;
 mod types;
+mod game;
 // use crate::{
 //     small::{SmallBattleSnake, Status::*},
 //     types::{Direction, State},
@@ -20,6 +19,7 @@ use types::*;
 use warp::http::StatusCode;
 use warp::Filter;
 use warp::Rejection;
+use crate::game::board::{Move, State};
 
 use crate::move_table::MoveTable;
 use crate::train::Trainer;
